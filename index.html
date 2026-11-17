@@ -330,6 +330,18 @@
   <div class="foot"><button onclick="closeModal('ovRisk')" data-i18n="cancel">Cancel</button><button class="primary" onclick="saveRiskOverride()" data-i18n="save">Save</button></div>
 </div></div>
 
+<!-- REMOVE FROM AUDIT LIST MODAL -->
+<div class="overlay" id="ovAuditRemove"><div class="modal">
+  <h3 data-i18n="ar_title">Remove from the audit list</h3>
+  <div class="body">
+    <div class="field" id="arWho" style="font-weight:700"></div>
+    <div class="field"><label data-i18n="ar_reason">Reason</label><select id="arReason"></select></div>
+    <div class="field"><label data-i18n="ar_note">Note (optional)</label><textarea id="arNote" rows="2"></textarea></div>
+    <div class="hint" data-i18n="ar_hint">The client stays in the database with its partner and engagements — it is only taken off the Audit allocation page. You can restore it any time from “Removed from audit list” at the bottom of the page.</div>
+  </div>
+  <div class="foot"><button onclick="closeModal('ovAuditRemove')" data-i18n="cancel">Cancel</button><button class="primary" onclick="saveAuditRemove()" data-i18n="ar_confirm">Remove</button></div>
+</div></div>
+
 <!-- START QUESTIONNAIRE MODAL -->
 <div class="overlay" id="ovStartReview"><div class="modal">
   <h3 data-i18n="start_q">Start a questionnaire</h3>
@@ -498,7 +510,12 @@ const I18N={
   rf_kyc_high:"KYC risk rating High", rf_kyc_med:"KYC risk rating Medium", rf_ac_high:"A&C engagement risk High", rf_ac_med:"A&C engagement risk Medium", rf_none:"No risk factors recorded",
   risk_high:"High", risk_medium:"Medium", risk_low:"Low", risk_overridden:"Overridden (automatic: {a})", th_risk:"Risk",
   alloc_other:"Other partners", flag_listed_s:"Listed", th_flags:"Listed / FRA / PIE", th_audit_rev:"Audit revenue (EGP)", th_signing_partner:"Allocated to",
-  alloc_hint:"Allocate audit clients to the signing partners. Click a box in the matrix to list those clients; click initials to allocate one client, or tick several and allocate together.",
+  alloc_hint:"Allocate audit clients to the signing partners. Click a box in the matrix to list those clients; click initials to allocate one client (click them again to unallocate), or tick several and allocate together. Use ✕ to take a client off this page.",
+  alloc_remove_btn:"✕ Remove", alloc_remove_sel:"✕ Remove from audit list", ar_title:"Remove from the audit list", ar_reason:"Reason", ar_note:"Note (optional)",
+  ar_hint:"The client stays in the database with its partner and engagements — it is only taken off the Audit allocation page. You can restore it any time from “Removed from audit list” at the bottom of the page.",
+  ar_confirm:"Remove", ar_r_not_audit:"Not an audit client (other services only)", ar_r_former:"No longer a client", ar_r_lost:"Audit lost / declined", ar_r_other:"Other (please explain)",
+  a_ar_note:"Please add a note explaining the reason.", alloc_removed_title:"Removed from audit list", ar_restore:"Restore", th_removed:"Removed",
+  a_confirm_unassign:"Unallocate {name} from {p}? It will move to “Not assigned”.",
   alloc_show_all:"Show all clients (not only audit clients)", no_signers:"No audit signers set yet — tick “Audit signer” for people in ⚙ Settings → Partners, directors & managers.",
   risk_matrix:"Risk matrix", risk_matrix_hint:"— audits by risk level and partner (red counts = listed / FRA regulated)",
   risk_method:"Risk is calculated automatically: Listed +3, FRA regulated +3, PIE +2, transnational +1, financial-sector industry +1, KYC risk rating High +3 / Medium +1, A&C engagement risk High +2 / Medium +1. 3+ points = High, 1–2 = Medium, 0 = Low. Equity partners can override any client (✎). Click Listed / FRA / PIE on a client to set its classification.",
@@ -639,7 +656,12 @@ const I18N={
   rf_kyc_high:"تصنيف مخاطر KYC مرتفع", rf_kyc_med:"تصنيف مخاطر KYC متوسط", rf_ac_high:"مخاطر التكليف مرتفعة", rf_ac_med:"مخاطر التكليف متوسطة", rf_none:"لا توجد عوامل مخاطر مسجلة",
   risk_high:"مرتفع", risk_medium:"متوسط", risk_low:"منخفض", risk_overridden:"معدّل يدويًا (تلقائيًا: {a})", th_risk:"المخاطر",
   alloc_other:"شركاء آخرون", flag_listed_s:"مُدرجة", th_flags:"مُدرجة / الهيئة / مصلحة عامة", th_audit_rev:"إيراد المراجعة (ج.م)", th_signing_partner:"موزّع على",
-  alloc_hint:"وزّع عملاء المراجعة على الشركاء الموقّعين. اضغط على خانة في المصفوفة لعرض عملائها، واضغط على الأحرف الأولى لتوزيع عميل، أو حدد عدة عملاء ووزّعهم معًا.",
+  alloc_hint:"وزّع عملاء المراجعة على الشركاء الموقّعين. اضغط على خانة في المصفوفة لعرض عملائها، واضغط على الأحرف الأولى لتوزيع عميل (واضغط مرة أخرى لإلغاء التوزيع)، أو حدد عدة عملاء ووزّعهم معًا. استخدم ✕ لإزالة عميل من هذه الصفحة.",
+  alloc_remove_btn:"✕ إزالة", alloc_remove_sel:"✕ إزالة من قائمة المراجعة", ar_title:"إزالة من قائمة المراجعة", ar_reason:"السبب", ar_note:"ملاحظة (اختياري)",
+  ar_hint:"يبقى العميل في قاعدة البيانات مع الشريك والارتباطات — تتم إزالته فقط من صفحة توزيع المراجعة. يمكنك استعادته في أي وقت من «المُزالون من قائمة المراجعة» أسفل الصفحة.",
+  ar_confirm:"إزالة", ar_r_not_audit:"ليس عميل مراجعة (خدمات أخرى فقط)", ar_r_former:"لم يعد عميلًا", ar_r_lost:"فقدان / رفض المراجعة", ar_r_other:"أخرى (يرجى التوضيح)",
+  a_ar_note:"يرجى إضافة ملاحظة توضح السبب.", alloc_removed_title:"المُزالون من قائمة المراجعة", ar_restore:"استعادة", th_removed:"تاريخ الإزالة",
+  a_confirm_unassign:"إلغاء توزيع {name} من {p}؟ سينتقل إلى «غير موزّع».",
   alloc_show_all:"عرض كل العملاء (وليس عملاء المراجعة فقط)", no_signers:"لم يتم تحديد الموقّعين بعد — حدد «موقّع مراجعة» من ⚙ الإعدادات.",
   risk_matrix:"مصفوفة المخاطر", risk_matrix_hint:"— المراجعات حسب مستوى المخاطر والشريك (الأرقام الحمراء = مُدرجة / خاضعة للهيئة)",
   risk_method:"تُحسب المخاطر تلقائيًا: مُدرجة +3، خاضعة للهيئة +3، مصلحة عامة +2، عابرة للحدود +1، قطاع مالي +1، تصنيف KYC مرتفع +3 / متوسط +1، مخاطر التكليف مرتفعة +2 / متوسطة +1. 3 نقاط فأكثر = مرتفع، 1–2 = متوسط، صفر = منخفض. يمكن للشركاء المساهمين تعديل أي عميل (✎).",
@@ -1946,7 +1968,7 @@ function riskBadge(c){const r=clientRisk(c);
   return `<span class="badge ${RISK_CLS[r.level]}" title="${esc(tip)}">${t('risk_'+r.level.toLowerCase())}${r.override?' ✎':''}</span>`;}
 
 /* ---- audit allocation (equity partners) ---- */
-let allocCell=null, allocShowAll=false; const allocSel=new Set();
+let allocCell=null, allocShowAll=false, allocShowRemoved=false; const allocSel=new Set();
 function auditSigners(){return (data.persons||[]).filter(p=>p.audit_signer&&p.active).sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));}
 function initials(n){return (n||'').split(/\s+/).filter(Boolean).map(w=>w[0]).join('').slice(0,3).toUpperCase()}
 function hasAudit(c){return engForClient(c.id).some(e=>deptOf(e.service_line)==='Audit & Assurance')}
@@ -1958,7 +1980,8 @@ function allocSelectAll(ids,on){ids.split(',').filter(Boolean).forEach(id=>on?al
 function renderAllocation(){
   const el=$('allocTable'); if(!el)return;
   const signers=auditSigners(), sIds=new Set(signers.map(p=>p.id)), fin=can('seeFinancials');
-  const pool=filteredClients().filter(c=>allocShowAll||hasAudit(c)||sIds.has(c.partner_person));
+  const removedList=filteredClients().filter(c=>c.audit_excluded).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const pool=filteredClients().filter(c=>!c.audit_excluded&&(allocShowAll||hasAudit(c)||sIds.has(c.partner_person)));
   [...allocSel].forEach(id=>{if(!pool.some(c=>c.id===id))allocSel.delete(id);});
   const cols=[...signers.map(p=>({id:p.id,label:p.full_name,sub:t('title_'+(p.title||'Partner').toLowerCase())}))];
   if(pool.some(c=>allocCol(c,sIds)==='__other'))cols.push({id:'__other',label:t('alloc_other'),sub:''});
@@ -1984,12 +2007,18 @@ function renderAllocation(){
       <td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span>${groupChip(groupOf(c))}<div class="sub2">${esc(c.industry||'')}</div></td>
       <td style="white-space:nowrap">${flagBtn(c,'Listed',t('flag_listed_s'))}${flagBtn(c,'FRA Regulated','FRA')}${flagBtn(c,'PIE','PIE')}</td>
       ${fin?`<td class="num money">${money(auditRev(c))}</td>`:''}
-      <td style="white-space:nowrap">${signers.map(p=>`<button class="sgn${c.partner_person===p.id?' on':''}" title="${esc(p.full_name)}" onclick="assignAudit(['${c.id}'],'${p.id}')">${esc(initials(p.full_name))}</button>`).join('')}
+      <td style="white-space:nowrap">${signers.map(p=>`<button class="sgn${c.partner_person===p.id?' on':''}" title="${esc(p.full_name)}" onclick="${c.partner_person===p.id?`unassignAudit('${c.id}')`:`assignAudit(['${c.id}'],'${p.id}')`}">${esc(initials(p.full_name))}</button>`).join('')}
         ${c.partner_person&&!sIds.has(c.partner_person)?`<div class="hint">${esc(personName(c.partner_person))}</div>`:''}</td>
-      <td class="rowact"><button onclick="openRiskOverride('${c.id}')">${t('risk_override_btn')}</button></td></tr>`;}).join('');
+      <td class="rowact"><button onclick="openRiskOverride('${c.id}')">${t('risk_override_btn')}</button> <button onclick="openAuditRemove(['${c.id}'])">${t('alloc_remove_btn')}</button></td></tr>`;}).join('');
   const bulk=allocSel.size?`<div class="panel movebar"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px">
       <b>${t('n_selected',{n:allocSel.size})}</b> → ${t('assign_to')} ${signers.map(p=>`<button class="primary" onclick="assignAudit([...allocSel],'${p.id}')">${esc(p.full_name)}</button>`).join(' ')}
-      <button onclick="assignAudit([...allocSel],null)">${t('dist_none')}</button> <button onclick="allocSel.clear();renderAllocation()">${t('clear_sel')}</button></div></div>`:'';
+      <button onclick="assignAudit([...allocSel],null)">${t('dist_none')}</button> <button onclick="openAuditRemove([...allocSel])">${t('alloc_remove_sel')}</button> <button onclick="allocSel.clear();renderAllocation()">${t('clear_sel')}</button></div></div>`:'';
+  const removedPanel=removedList.length?`<div class="panel" style="margin-top:16px"><h3><span class="linkname" onclick="allocShowRemoved=!allocShowRemoved;renderAllocation()">${allocShowRemoved?'▾':'▸'} ${t('alloc_removed_title')}</span> <span class="hint">(${removedList.length})</span></h3>
+      ${allocShowRemoved?`<div style="overflow-x:auto"><table><thead><tr><th>${t('th_code')}</th><th>${t('th_client')}</th><th>${t('ar_reason')}</th><th>${t('th_removed')}</th><th></th></tr></thead><tbody>${removedList.map(c=>`<tr>
+        <td class="code">${c.client_code}</td><td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span></td>
+        <td>${esc(t('ar_r_'+(c.audit_excluded_reason||'other')))}${c.audit_excluded_note?`<div class="sub2">${esc(c.audit_excluded_note)}</div>`:''}</td>
+        <td class="hint">${c.audit_excluded_at?fmtDate(String(c.audit_excluded_at).slice(0,10)):''}${c.audit_excluded_by?`<div>${esc(c.audit_excluded_by)}</div>`:''}</td>
+        <td class="rowact"><button onclick="restoreAudit('${c.id}')">${t('ar_restore')}</button></td></tr>`).join('')}</tbody></table></div>`:''}</div>`:'';
   const legend=signers.map(p=>`<b>${esc(initials(p.full_name))}</b> = ${esc(p.full_name)}`).join(' · ');
   el.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
@@ -2001,7 +2030,34 @@ function renderAllocation(){
     ${bulk}
     <div class="panel"><h3>${allocCell?t('alloc_cell_title',{r:t('risk_'+allocCell.risk.toLowerCase()),p:(cols.find(c=>c.id===allocCell.col)||{}).label||''})+` <a href="#" onclick="allocCell=null;renderAllocation();return false" class="hint">${t('show_all_cells')}</a>`:t('alloc_list_title')} <span class="hint">(${list.length})</span></h3>
       <div class="hint" style="padding:0 16px 6px">${legend}</div>
-      ${list.length?`<div style="overflow-x:auto"><table><thead><tr><th><input type="checkbox" ${allSel?'checked':''} onchange="allocSelectAll('${ids.join(',')}',this.checked)"></th><th>${t('th_risk')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th>${t('th_flags')}</th>${fin?`<th class="num">${t('th_audit_rev')}</th>`:''}<th>${t('th_signing_partner')}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>${list.length>400?`<div class="hint" style="padding:8px 16px">${t('showing_first',{n:400,total:list.length})}</div>`:''}`:`<div class="empty">${t('al_none')}</div>`}</div>`;
+      ${list.length?`<div style="overflow-x:auto"><table><thead><tr><th><input type="checkbox" ${allSel?'checked':''} onchange="allocSelectAll('${ids.join(',')}',this.checked)"></th><th>${t('th_risk')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th>${t('th_flags')}</th>${fin?`<th class="num">${t('th_audit_rev')}</th>`:''}<th>${t('th_signing_partner')}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>${list.length>400?`<div class="hint" style="padding:8px 16px">${t('showing_first',{n:400,total:list.length})}</div>`:''}`:`<div class="empty">${t('al_none')}</div>`}</div>
+    ${removedPanel}`;
+}
+async function unassignAudit(id){
+  const c=clientById(id); if(!c)return;
+  if(!confirm(t('a_confirm_unassign',{name:c.name,p:personName(c.partner_person)})))return;
+  await assignAudit([id],null);
+}
+// take clients off the audit allocation page (kept in the database; restorable)
+let arIds=[];
+function openAuditRemove(ids){
+  ids=(ids||[]).filter(Boolean); if(!ids.length||!can('assignClients'))return; arIds=ids;
+  $('arWho').textContent=ids.length===1?((clientById(ids[0])||{}).name||''):t('n_selected',{n:ids.length});
+  $('arReason').innerHTML=['not_audit','former','lost','other'].map(k=>`<option value="${k}">${esc(t('ar_r_'+k))}</option>`).join('');
+  $('arNote').value=''; $('ovAuditRemove').classList.add('show');
+}
+async function saveAuditRemove(){
+  const reason=$('arReason').value, note=$('arNote').value.trim();
+  if(reason==='other'&&!note){alert(t('a_ar_note'));return}
+  const {error}=await sb.from('clients').update({audit_excluded:true,audit_excluded_reason:reason,audit_excluded_note:note||null,
+    audit_excluded_at:new Date().toISOString(),audit_excluded_by:(state.user&&state.user.email)||null}).in('id',arIds);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  arIds.forEach(id=>allocSel.delete(id)); arIds=[]; closeModal('ovAuditRemove'); await refresh();
+}
+async function restoreAudit(id){
+  const {error}=await sb.from('clients').update({audit_excluded:false,audit_excluded_reason:null,audit_excluded_note:null,audit_excluded_at:null,audit_excluded_by:null}).eq('id',id);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  await refresh();
 }
 async function assignAudit(ids,personId){
   ids=ids.filter(Boolean); if(!ids.length)return;
