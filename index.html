@@ -277,7 +277,7 @@
     </div>
     <div class="field"><label data-i18n="l_notes">Notes</label><textarea id="cNotes" rows="2"></textarea></div>
   </div>
-  <div class="foot"><button onclick="closeModal('ovClient')" data-i18n="cancel">Cancel</button><button id="btnSaveClient" class="primary" onclick="saveClient()" data-i18n="save_client">Save client</button></div>
+  <div class="foot"><button id="btnDelFromEdit" class="del hidden" style="margin-inline-end:auto" onclick="openDelClient($('ovClient').dataset.id)" data-i18n="dc_btn">Delete / merge…</button><button onclick="closeModal('ovClient')" data-i18n="cancel">Cancel</button><button id="btnSaveClient" class="primary" onclick="saveClient()" data-i18n="save_client">Save client</button></div>
 </div></div>
 
 <!-- ENGAGEMENT MODAL -->
@@ -386,6 +386,28 @@
     <div class="field"><label data-i18n="l_notes">Notes</label><textarea id="gNotes" rows="2"></textarea></div>
   </div>
   <div class="foot"><button onclick="closeModal('ovGroup')" data-i18n="cancel">Cancel</button><button class="primary" onclick="saveGroup()" data-i18n="save_group">Save group</button></div>
+</div></div>
+
+<!-- DELETE / MERGE CLIENT MODAL (equity partners) -->
+<div class="overlay" id="ovDelClient"><div class="modal" style="max-width:600px">
+  <h3 id="dcTitle">Delete or merge client</h3>
+  <div class="body">
+    <div id="dcInfo"></div>
+    <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="radio" name="dcMode" value="merge" checked onchange="dcModeChange()" style="margin-top:3px">
+      <span><b data-i18n="dc_merge">It's a duplicate: merge it into the client to keep</b><div class="hint" data-i18n="dc_merge_hint">Its engagements, questionnaires, documents and manager access move to the client you keep, and empty fields on that client are filled in from this one. Then this record is removed.</div></span></label>
+    <div id="dcMergeBox" style="margin-inline-start:26px">
+      <input id="dcSearch" data-i18n-ph="dc_search_ph" placeholder="Search by name or code…" oninput="dcFill()" style="width:100%">
+      <select id="dcKeep" size="8" onchange="dcKeepInfo()" style="width:100%;margin-top:6px"></select>
+      <div class="hint" style="margin-top:4px" data-i18n="dc_star_hint">★ = similar name</div>
+      <div id="dcKeepInfo" style="margin-top:8px"></div>
+    </div>
+    <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="radio" name="dcMode" value="delete" onchange="dcModeChange()" style="margin-top:3px">
+      <span><b data-i18n="dc_delete">Delete it permanently</b><div class="hint" data-i18n="dc_delete_hint">The client and its engagements, letters, questionnaires and documents are deleted. This cannot be undone in the app; a copy of the record is kept in the deletion log.</div></span></label>
+    <div id="dcDeleteBox" class="hidden" style="margin-inline-start:26px">
+      <div class="field"><label id="dcCodeLbl"></label><input id="dcConfirm" autocomplete="off" style="width:160px"></div>
+    </div>
+  </div>
+  <div class="foot"><button onclick="closeModal('ovDelClient')" data-i18n="cancel">Cancel</button><button id="btnDelClient" class="primary" onclick="doDelClient()">Merge</button></div>
 </div></div>
 
 <!-- GROUP MEMBERS MODAL -->
@@ -617,7 +639,25 @@ const I18N={
   a_email_pass:"Enter your email and password.", a_signin_failed:"Sign-in failed.", a_account_created:"Account created — signing you in…",
   a_client_required:"Client name is required.", a_eng_required:"Service line and year are required.",
   a_valid_email:"Enter a valid email address.", a_could_not_add:"Could not add: ", a_could_not_save:"Could not save: ",
-  a_delete_eng:"Delete this engagement?", a_something_wrong:"Something went wrong: "
+  a_delete_eng:"Delete this engagement?", a_something_wrong:"Something went wrong: ",
+  dc_btn:"Delete / merge…", dc_title:"Delete or merge client",
+  dc_merge:"It's a duplicate: merge it into the client to keep",
+  dc_merge_hint:"Its engagements, questionnaires, documents and manager access move to the client you keep, and any empty fields on that client are filled in from this one. Then this record is removed.",
+  dc_search_ph:"Search by name or code…", dc_star_hint:"★ = similar name. Click the client to keep.",
+  dc_delete:"Delete it permanently",
+  dc_delete_hint:"The client and its engagements, engagement letters, questionnaires and documents are deleted. This can't be undone in the app; a copy of the record is kept in the deletion log (Settings).",
+  dc_type_code:"To confirm, type the client code: {code}", dc_merge_btn:"Merge", dc_delete_btn:"Delete permanently",
+  dc_n_eng:"{n} engagement(s)", dc_n_letters:"{n} letter(s)", dc_n_reviews:"{n} questionnaire(s)", dc_n_docs:"{n} document(s)", dc_logo:"logo",
+  dc_pick_keep:"Choose the client to keep from the list.",
+  dc_ccy_block:"The contract currencies differ ({a} and {b}). Change one of them first so the fees stay correct.",
+  dc_keep_former:"The client you're keeping is a former client.",
+  dc_other_group:"The two clients are in different groups. The kept client stays in its own group.",
+  dc_keep_lbl:"Keep:", dc_merge_result:"{dup} will be removed and its {n} engagement(s) moved to {keep}.",
+  dc_confirm_merge:"Merge {dup} into {keep}?\n\n{dup} will be removed. Its engagements, questionnaires and documents move to {keep}. This can't be undone in the app.",
+  dc_code_mismatch:"The code didn't match, so nothing was deleted.", dc_deleted:"{name} has been deleted.",
+  dlog_title:"Deleted & merged clients", dlog_hint:"Every deletion and merge is logged here, with a copy of the removed record. Only the equity partners can see this.",
+  dlog_when:"Date", dlog_what:"What happened", dlog_eng:"Engagements", dlog_by:"By",
+  dlog_merged:"Merged into {to}", dlog_deleted:"Deleted", dlog_empty:"Nothing has been deleted or merged yet."
  },
  ar:{
   app_title:"قاعدة بيانات العملاء", signin_sub:"Moore Egypt — سجّل الدخول للمتابعة",
@@ -818,7 +858,25 @@ const I18N={
   a_email_pass:"أدخل بريدك وكلمة المرور.", a_signin_failed:"فشل تسجيل الدخول.", a_account_created:"تم إنشاء الحساب — جارٍ تسجيل دخولك…",
   a_client_required:"اسم العميل مطلوب.", a_eng_required:"خط الخدمة والسنة مطلوبان.",
   a_valid_email:"أدخل بريداً إلكترونياً صحيحاً.", a_could_not_add:"تعذّر الإضافة: ", a_could_not_save:"تعذّر الحفظ: ",
-  a_delete_eng:"حذف هذا التكليف؟", a_something_wrong:"حدث خطأ ما: "
+  a_delete_eng:"حذف هذا التكليف؟", a_something_wrong:"حدث خطأ ما: ",
+  dc_btn:"حذف / دمج…", dc_title:"حذف العميل أو دمجه",
+  dc_merge:"عميل مكرر: دمجه في العميل الذي سيتم الإبقاء عليه",
+  dc_merge_hint:"تنتقل تكليفاته واستبياناته ومستنداته وصلاحيات المديرين إلى العميل الذي تُبقي عليه، وتُستكمل الحقول الفارغة لديه من هذا السجل. ثم يُحذف هذا السجل.",
+  dc_search_ph:"ابحث بالاسم أو الكود…", dc_star_hint:"★ = اسم مشابه. اضغط على العميل الذي ستُبقي عليه.",
+  dc_delete:"حذفه نهائيًا",
+  dc_delete_hint:"يُحذف العميل وتكليفاته وخطابات التكليف والاستبيانات والمستندات. لا يمكن التراجع عن ذلك من التطبيق؛ تُحفظ نسخة من السجل في سجل الحذف (الإعدادات).",
+  dc_type_code:"للتأكيد، اكتب كود العميل: {code}", dc_merge_btn:"دمج", dc_delete_btn:"حذف نهائي",
+  dc_n_eng:"{n} تكليف", dc_n_letters:"{n} خطاب", dc_n_reviews:"{n} استبيان", dc_n_docs:"{n} مستند", dc_logo:"شعار",
+  dc_pick_keep:"اختر من القائمة العميل الذي ستُبقي عليه.",
+  dc_ccy_block:"عملتا العقد مختلفتان ({a} و{b}). غيّر إحداهما أولاً حتى تبقى الأتعاب صحيحة.",
+  dc_keep_former:"العميل الذي تُبقي عليه عميل سابق.",
+  dc_other_group:"العميلان في مجموعتين مختلفتين. يبقى العميل المُبقى عليه في مجموعته.",
+  dc_keep_lbl:"الإبقاء على:", dc_merge_result:"سيُحذف {dup} وتنتقل تكليفاته ({n}) إلى {keep}.",
+  dc_confirm_merge:"دمج {dup} في {keep}؟\n\nسيُحذف {dup} وتنتقل تكليفاته واستبياناته ومستنداته إلى {keep}. لا يمكن التراجع عن ذلك من التطبيق.",
+  dc_code_mismatch:"الكود غير مطابق — لم يتم الحذف.", dc_deleted:"تم حذف {name}.",
+  dlog_title:"العملاء المحذوفون والمدمجون", dlog_hint:"تُسجَّل هنا كل عملية حذف أو دمج مع نسخة من السجل المحذوف. يراه الشركاء المساهمون فقط.",
+  dlog_when:"التاريخ", dlog_what:"الإجراء", dlog_eng:"التكليفات", dlog_by:"بواسطة",
+  dlog_merged:"دُمج في {to}", dlog_deleted:"حُذف", dlog_empty:"لم يُحذف أو يُدمج أي عميل بعد."
  }
 };
 function t(k,v){let s=(I18N[state.lang]&&I18N[state.lang][k])!=null?I18N[state.lang][k]:(I18N.en[k]!=null?I18N.en[k]:k);
@@ -845,6 +903,7 @@ const CAP={
   editClients:['partner','finance','office_admin','compliance','compliance_officer'], addClients:['partner','finance','office_admin','compliance','compliance_officer'],
   seeDashboard:['partner'],
   seeTiers:['partner','finance'],   // A/B/C fee tiers need every client's fees, so only roles that see all clients + financials
+  deleteClients:['partner'],        // delete a client / merge a duplicate (also enforced in the database)
 };
 // KYC questionnaire permissions are per person (Settings tick-boxes), not per role
 function kycPrep(){const p=state.profile||{};return !!(p.kyc_prepare||p.kyc_approve)}
@@ -962,6 +1021,8 @@ async function loadAll(){
     const [rv,dc]=await Promise.all([sb.from('compliance_reviews').select('*').order('updated_at',{ascending:false}),sb.from('compliance_documents').select('*').order('uploaded_at')]);
     data.reviews=rv.data||[]; data.docs=dc.data||[];
   } else {data.reviews=[]; data.docs=[];}
+  if(can('deleteClients')){const dl=await sb.from('deleted_clients').select('id,client_code,name,action,merged_into_code,merged_into_name,engagements,deleted_by,deleted_at').order('deleted_at',{ascending:false}).limit(200); data.deletedLog=dl.data||[];}
+  else data.deletedLog=[];
 }
 
 /* ============ CHROME ============ */
@@ -1511,7 +1572,7 @@ function formerPanel(){
       <td class="code">${c.client_code}</td><td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span> <span class="badge">${t('former_badge')}</span>${c.audit_excluded_note?`<div class="sub2">${esc(c.audit_excluded_note)}</div>`:''}</td>
       <td>${esc(personName(c.partner_person)||'—')}</td>
       <td class="hint">${c.former_at?fmtDate(String(c.former_at).slice(0,10)):''}${c.former_by?`<div>${esc(c.former_by)}</div>`:''}</td>
-      <td class="rowact">${edit?`<button onclick="setFormer('${c.id}',false)">${t('reactivate')}</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${t('no_clients')}</div>`):''}`;
+      <td class="rowact">${edit?`<button onclick="setFormer('${c.id}',false)">${t('reactivate')}</button>`:''}${can('deleteClients')?` <button class="del" onclick="openDelClient('${c.id}')">${t('dc_btn')}</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${t('no_clients')}</div>`):''}`;
 }
 // fields to write when a client becomes former / current again (reactivating also undoes a "No longer a client" audit removal)
 function formerFields(c,on){
@@ -1526,6 +1587,109 @@ async function setFormer(id,on){
   const {error}=await sb.from('clients').update(formerFields(c,on)).eq('id',id);
   if(error){alert(t('a_could_not_save')+error.message);return}
   await refresh();
+}
+
+/* ---- delete a client, or merge a duplicate into the client to keep (equity partners; both logged in deleted_clients) ---- */
+let dcId=null;
+function dcWords(n){return new Set(nameWords(n).map(w=>w.toLowerCase()).filter(w=>w.length>2&&!GRP_STOP.has(w)&&!/^\d+$/.test(w)))}
+function dcCounts(id){
+  const eng=allEngs().filter(e=>e.client_id===id);
+  return {eng:eng.length,letters:eng.filter(e=>e.letter_file).length,
+    reviews:(data.reviews||[]).filter(r=>r.client_id===id).length,docs:(data.docs||[]).filter(d=>d.client_id===id).length};
+}
+function dcSummary(c){
+  const n=dcCounts(c.id), b=[t('dc_n_eng',{n:n.eng})];
+  if(n.letters)b.push(t('dc_n_letters',{n:n.letters}));
+  if(n.reviews)b.push(t('dc_n_reviews',{n:n.reviews}));
+  if(n.docs)b.push(t('dc_n_docs',{n:n.docs}));
+  if(c.logo_file)b.push(t('dc_logo'));
+  return b.join(' · ');
+}
+function dcMode(){const r=document.querySelector('input[name=dcMode]:checked');return r?r.value:'merge'}
+function openDelClient(id){
+  const c=clientById(id); if(!c||!can('deleteClients'))return;
+  dcId=id;
+  $('dcTitle').textContent=t('dc_title');
+  $('dcInfo').innerHTML=`<div><b><span class="code">#${c.client_code}</span> ${esc(c.name)}</b>${c.former?` <span class="badge">${t('former_badge')}</span>`:''}</div>
+    <div class="hint">${esc([personName(c.partner_person),c.contract_currency||'EGP',dcSummary(c)].filter(Boolean).join(' · '))}</div>`;
+  document.querySelector('input[name=dcMode][value=merge]').checked=true;
+  $('dcSearch').value=''; $('dcConfirm').value=''; $('dcKeep').innerHTML='';
+  $('dcCodeLbl').textContent=t('dc_type_code',{code:c.client_code});
+  dcFill(); dcModeChange();
+  $('ovDelClient').classList.add('show');
+}
+function dcModeChange(){
+  const m=dcMode(), b=$('btnDelClient');
+  $('dcMergeBox').classList.toggle('hidden',m!=='merge'); $('dcDeleteBox').classList.toggle('hidden',m!=='delete');
+  b.textContent=t(m==='merge'?'dc_merge_btn':'dc_delete_btn');
+  b.style.background=b.style.borderColor=m==='delete'?'#b23b3b':'';
+  dcKeepInfo();
+}
+// clients to merge into: similar names first (★, rarer shared words count more), then A–Z; the search box narrows by name or code
+function dcFill(){
+  const c=clientById(dcId); if(!c)return;
+  const q=$('dcSearch').value.trim().toLowerCase(), mine=dcWords(c.name);
+  const everyone=data.clients.concat(data.formerClients||[]), df={};
+  everyone.forEach(x=>dcWords(x.name).forEach(w=>{df[w]=(df[w]||0)+1}));
+  const list=everyone.filter(x=>x.id!==c.id)
+    .filter(x=>!q||(x.name||'').toLowerCase().includes(q)||String(x.client_code).includes(q.replace(/^#/,'')))
+    .map(x=>{let s=0;dcWords(x.name).forEach(w=>{if(mine.has(w))s+=1/df[w]});return {x,s}})
+    .sort((a,b)=>b.s-a.s||(a.x.name||'').localeCompare(b.x.name||''));
+  const sel=$('dcKeep'), cur=sel.value;
+  sel.innerHTML=list.map(o=>`<option value="${o.x.id}">${o.s?'★ ':''}#${o.x.client_code} — ${esc(o.x.name)}${o.x.former?' ('+esc(t('former_badge'))+')':''}</option>`).join('');
+  sel.value=list.some(o=>o.x.id===cur)?cur:''; if(!sel.value)sel.selectedIndex=-1;
+  dcKeepInfo();
+}
+function dcKeepInfo(){
+  const box=$('dcKeepInfo'); if(!box)return;
+  const c=clientById(dcId), k=$('dcKeep').value?clientById($('dcKeep').value):null;
+  if(dcMode()!=='merge'||!c||!k){box.innerHTML=c&&dcMode()==='merge'?`<div class="hint">${t('dc_pick_keep')}</div>`:'';return}
+  const cc=c.contract_currency||'EGP', kc=k.contract_currency||'EGP', n=dcCounts(c.id), warn=[];
+  if(n.eng&&cc!==kc)warn.push(t('dc_ccy_block',{a:cc,b:kc}));
+  if(k.former)warn.push(t('dc_keep_former'));
+  if(c.group_id&&k.group_id&&c.group_id!==k.group_id)warn.push(t('dc_other_group'));
+  box.innerHTML=`<div style="border:1px solid var(--line);border-radius:10px;padding:8px 12px">
+    <div><span class="hint">${t('dc_keep_lbl')}</span> <b><span class="code">#${k.client_code}</span> ${esc(k.name)}</b></div>
+    <div class="hint">${esc([personName(k.partner_person),kc,dcSummary(k)].filter(Boolean).join(' · '))}</div>
+    <div style="font-size:12px;margin-top:6px">${t('dc_merge_result',{dup:'#'+c.client_code,keep:'#'+k.client_code,n:n.eng})}</div>
+    ${warn.map(w=>`<div style="color:#b23b3b;font-size:12px;margin-top:4px">⚠ ${esc(w)}</div>`).join('')}</div>`;
+}
+async function doDelClient(){
+  const c=clientById(dcId); if(!c||!can('deleteClients'))return;
+  const btn=$('btnDelClient');
+  if(dcMode()==='merge'){
+    const k=$('dcKeep').value?clientById($('dcKeep').value):null;
+    if(!k){alert(t('dc_pick_keep'));return}
+    if(!confirm(t('dc_confirm_merge',{dup:`#${c.client_code} ${c.name}`,keep:`#${k.client_code} ${k.name}`})))return;
+    btn.disabled=true; const {error}=await sb.rpc('merge_client',{dup:c.id,keep:k.id}); btn.disabled=false;
+    if(error){alert(t('a_could_not_save')+error.message);return}
+    // the duplicate's logo is now unused if the kept client already had its own
+    if(c.logo_file&&k.logo_file&&c.logo_file!==k.logo_file){try{await sb.storage.from('client-logos').remove([c.logo_file]);}catch(_){}}
+    closeModal('ovDelClient'); closeModal('ovClient'); await refresh(); openClient(k.id);
+  }else{
+    if($('dcConfirm').value.trim().replace(/^#/,'')!==String(c.client_code)){alert(t('dc_code_mismatch'));return}
+    const letters=allEngs().filter(e=>e.client_id===c.id&&e.letter_file).map(e=>e.letter_file),
+          docs=(data.docs||[]).filter(d=>d.client_id===c.id).map(d=>d.file_path), logo=c.logo_file;
+    btn.disabled=true; const {error}=await sb.rpc('delete_client',{target:c.id}); btn.disabled=false;
+    if(error){alert(t('a_could_not_save')+error.message);return}
+    // stored files go too (best effort: the record is already deleted)
+    try{if(letters.length)await sb.storage.from('engagement-letters').remove(letters);}catch(_){}
+    try{if(docs.length)await sb.storage.from('kyc-documents').remove(docs);}catch(_){}
+    try{if(logo)await sb.storage.from('client-logos').remove([logo]);}catch(_){}
+    closeModal('ovDelClient'); closeModal('ovClient'); if(viewClientId===c.id)closeClient(); await refresh();
+    alert(t('dc_deleted',{name:c.name}));
+  }
+}
+function deletedLogPanel(){
+  const l=data.deletedLog||[]; if(!can('deleteClients'))return '';
+  return `<div style="border-top:1px solid var(--line);padding:16px 18px">
+    <div style="font-weight:700;margin-bottom:4px">${t('dlog_title')}</div><div class="hint" style="margin-bottom:8px">${t('dlog_hint')}</div>
+    ${l.length?`<div style="overflow-x:auto;max-height:340px;overflow-y:auto"><table><thead><tr><th>${t('dlog_when')}</th><th>${t('th_client')}</th><th>${t('dlog_what')}</th><th>${t('dlog_eng')}</th><th>${t('dlog_by')}</th></tr></thead><tbody>${l.map(r=>`<tr>
+      <td class="hint">${fmtDate(String(r.deleted_at).slice(0,10))}</td>
+      <td><span class="code">#${r.client_code}</span> ${esc(r.name)}</td>
+      <td>${r.action==='merged'?esc(t('dlog_merged',{to:`#${r.merged_into_code} ${r.merged_into_name||''}`})):`<span style="color:#b23b3b">${t('dlog_deleted')}</span>`}</td>
+      <td class="num">${r.engagements||0}</td><td class="hint">${esc(r.deleted_by||'')}</td></tr>`).join('')}</tbody></table></div>`:`<div class="hint">${t('dlog_empty')}</div>`}
+  </div>`;
 }
 
 /* ---- client page ---- */
@@ -1564,7 +1728,7 @@ function renderClient(){
        ${can('seeTiers')&&!c.former?`<div class="sub2" style="margin-top:4px">${t('th_tier')}: ${clientTierCell(c)} <span class="hint">${t('tier_basis',{y:tierYearLabel()})}</span></div>`:''}
        ${c.notes?`<div class="sub2" style="margin-top:6px">${esc(c.notes)}</div>`:''}
        ${c.logo_file?`<div class="sub2" style="margin-top:6px"><a href="#" onclick="downloadLogo('${c.id}');return false">${t('download_logo')}</a></div>`:''}</div></div>
-     <div style="display:flex;gap:8px">${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit_client')}</button>`:''}
+     <div style="display:flex;gap:8px;align-items:flex-start">${can('deleteClients')?`<button class="del" onclick="openDelClient('${c.id}')">${t('dc_btn')}</button>`:''}${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit_client')}</button>`:''}
        <button class="primary" onclick="openEngModal('${c.id}',null)">${t('add_eng')}</button></div>
    </div></div>
    <div class="panel" style="margin-bottom:16px"><h3>${t('onboarding_title')}</h3><div style="padding:16px 20px">
@@ -1677,7 +1841,8 @@ function renderUsers(){
         <button class="primary" onclick="saveGrading()">${t('save_grading')}</button>
         <span class="hint" id="gradeMsg"></span>
       </div>
-    </div>`;
+    </div>
+    ${deletedLogPanel()}`;
 }
 async function saveGrading(){
   const a=Math.min(100,Math.max(0,parseInt($('tierA').value)||0)), b=Math.min(100-a,Math.max(0,parseInt($('tierB').value)||0));
@@ -1751,6 +1916,7 @@ function openClientModal(id){
   if(c&&c.logo_file){lcur.innerHTML=`<img id="cLogoPreview" class="clogo" alt="" style="width:48px;height:48px;vertical-align:middle"> ${esc(c.logo_file_name||'')} · <a href="#" style="color:#c0392b" onclick="removeLogo('${c.id}','${esc(c.logo_file)}');return false">${t('remove_file')}</a>`;fillLogo($('cLogoPreview'),c.logo_file);}
   else{lcur.textContent=t('no_logo');}
   updateFRA();
+  $('btnDelFromEdit').classList.toggle('hidden',!(id&&can('deleteClients')));
   $('ovClient').classList.add('show');
 }
 async function saveClient(){
