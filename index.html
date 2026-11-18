@@ -66,6 +66,9 @@
   .rmx .empty0{background:transparent;color:var(--muted)}
   .rmx .rcell:hover{outline:2px solid var(--brand);outline-offset:-2px}
   .rmx .sel{outline:3px solid var(--brand);outline-offset:-3px}
+  .rmx .rhead{cursor:pointer}
+  .rmx .rhead:hover{outline:2px solid var(--brand);outline-offset:-2px}
+  .rmx th.rhead:hover{color:var(--brand)}
   .rmx .rtot td{border-top:2px solid var(--line)}
   .rflags{font-size:11px;color:#b23b3b;font-weight:700}.rflags span{margin:0 3px}
   .flag{display:inline-block;padding:1px 7px;margin-inline-end:4px;border:1px solid var(--line);border-radius:10px;font-size:11px;color:var(--muted);cursor:pointer}
@@ -570,7 +573,9 @@ const I18N={
   a_confirm_former:"Mark {name} as a former client? It will leave the client list and all totals.",
   a_confirm_reactivate:"Reactivate {name} as a current client? It returns to the client list and totals (and to the audit allocation page if it was removed as “No longer a client”).",
   ar_former_hint:"“No longer a client” also marks the client as a former client across the app: it leaves the client list and all totals. Reactivate it from Client list → Former clients.",
-  risk_matrix:"Risk matrix", risk_matrix_hint:"— audits by risk level and partner (red counts = listed / FRA regulated)",
+  risk_matrix:"Risk matrix", risk_matrix_hint:"— audits by risk level and partner (red counts = listed / FRA regulated). Click a box, a partner's name, “Not assigned” or a risk level to list those clients; click again to show all.",
+  alloc_col_title:"{p} — all risk levels", alloc_row_title:"{r} risk — all partners",
+  alloc_col_tip:"Show only {p}'s clients (click again to show all)", alloc_row_tip:"Show only this risk level (click again to show all)",
   risk_method:"Risk is calculated automatically: Listed +3, FRA regulated +3, PIE +2, transnational +1, financial-sector industry +1, KYC risk rating High +3 / Medium +1, A&C engagement risk High +2 / Medium +1. 3+ points = High, 1–2 = Medium, 0 = Low. Equity partners can override any client (✎). Click Listed / FRA / PIE on a client to set its classification.",
   alloc_cell_title:"{r} risk · {p}", show_all_cells:"show all", alloc_list_title:"Audit clients", risk_override_btn:"Risk…", assign_to:"allocate to",
   a_confirm_assign:"Allocate {n} client(s) to {p}?", flag_toggle:"Click to switch on / off", fra_locked:"FRA Regulated stays on for listed companies and banking, insurance & financial-services clients.",
@@ -755,7 +760,9 @@ const I18N={
   a_confirm_former:"تحديد {name} كعميل سابق؟ سيُزال من قائمة العملاء وجميع الإجماليات.",
   a_confirm_reactivate:"إعادة تفعيل {name} كعميل حالي؟ سيعود إلى قائمة العملاء والإجماليات (وإلى صفحة توزيع المراجعة إن كان قد أُزيل بسبب «لم يعد عميلًا»).",
   ar_former_hint:"اختيار «لم يعد عميلًا» يحدد العميل أيضًا كعميل سابق في التطبيق كله: يُزال من قائمة العملاء وجميع الإجماليات. يمكن إعادة تفعيله من قائمة العملاء ← العملاء السابقون.",
-  risk_matrix:"مصفوفة المخاطر", risk_matrix_hint:"— المراجعات حسب مستوى المخاطر والشريك (الأرقام الحمراء = مُدرجة / خاضعة للهيئة)",
+  risk_matrix:"مصفوفة المخاطر", risk_matrix_hint:"— المراجعات حسب مستوى المخاطر والشريك (الأرقام الحمراء = مُدرجة / خاضعة للهيئة). اضغط على خانة أو اسم شريك أو «غير موزّع» أو مستوى مخاطر لعرض عملائه، واضغط مرة أخرى لعرض الكل.",
+  alloc_col_title:"{p} — جميع مستويات المخاطر", alloc_row_title:"مخاطر {r} — جميع الشركاء",
+  alloc_col_tip:"عرض عملاء {p} فقط (اضغط مرة أخرى لعرض الكل)", alloc_row_tip:"عرض هذا المستوى فقط (اضغط مرة أخرى لعرض الكل)",
   risk_method:"تُحسب المخاطر تلقائيًا: مُدرجة +3، خاضعة للهيئة +3، مصلحة عامة +2، عابرة للحدود +1، قطاع مالي +1، تصنيف KYC مرتفع +3 / متوسط +1، مخاطر التكليف مرتفعة +2 / متوسطة +1. 3 نقاط فأكثر = مرتفع، 1–2 = متوسط، صفر = منخفض. يمكن للشركاء المساهمين تعديل أي عميل (✎).",
   alloc_cell_title:"مخاطر {r} · {p}", show_all_cells:"عرض الكل", alloc_list_title:"عملاء المراجعة", risk_override_btn:"المخاطر…", assign_to:"توزيع على",
   a_confirm_assign:"توزيع {n} عميل على {p}؟", flag_toggle:"اضغط للتفعيل / الإلغاء", fra_locked:"يبقى «خاضع للهيئة» مفعّلًا للشركات المدرجة وعملاء البنوك والتأمين والخدمات المالية.",
@@ -2126,14 +2133,15 @@ function renderAllocation(){
   cols.push({id:'__un',label:t('not_assigned'),sub:''});
   const R=['High','Medium','Low'], risk={}; pool.forEach(c=>risk[c.id]=clientRisk(c));
   const auditRev=c=>engForClient(c.id).filter(e=>deptOf(e.service_line)==='Audit & Assurance').reduce((s,e)=>s+toEGP(e),0);
-  const cell=(r,col)=>pool.filter(c=>risk[c.id].level===r&&allocCol(c,sIds)===col);
+  // r / col = '' means "any": a column header (or its total) filters by partner / not assigned, a risk label (or its total) by risk
+  const cell=(r,col)=>pool.filter(c=>(!r||risk[c.id].level===r)&&(!col||allocCol(c,sIds)===col));
   const flagCount=(list,f)=>list.filter(c=>(c.client_types||[]).includes(f)).length;
-  const matrix=`<table class="rmx"><thead><tr><th>${t('th_risk')}</th>${cols.map(c=>`<th class="num">${esc(c.label)}${c.sub?`<div class="hint" style="font-weight:400">${esc(c.sub)}</div>`:''}</th>`).join('')}<th class="num">${t('total_word')}</th></tr></thead><tbody>${
-    R.map(r=>`<tr><td><span class="badge ${RISK_CLS[r]}">${t('risk_'+r.toLowerCase())}</span></td>${cols.map(col=>{const l=cell(r,col.id),L=flagCount(l,'Listed'),F=flagCount(l,'FRA Regulated');
-      const on=allocCell&&allocCell.risk===r&&allocCell.col===col.id;
-      return `<td class="num rcell r-${RISK_CLS[r]}${l.length?'':' empty0'}${on?' sel':''}" onclick="setAllocCell('${r}','${col.id}')"><b>${l.length}</b>${(L||F)?`<div class="rflags">${L?`<span>${t('flag_listed_s')} ${L}</span>`:''}${F?`<span>FRA ${F}</span>`:''}</div>`:''}</td>`;}).join('')}
-      <td class="num"><b>${pool.filter(c=>risk[c.id].level===r).length}</b></td></tr>`).join('')}
-    <tr class="rtot"><td>${t('total_word')}</td>${cols.map(col=>{const l=pool.filter(c=>allocCol(c,sIds)===col.id);return `<td class="num"><b>${l.length}</b>${fin?`<div class="hint">${money(l.reduce((s,c)=>s+auditRev(c),0))}</div>`:''}</td>`;}).join('')}<td class="num"><b>${pool.length}</b></td></tr></tbody></table>`;
+  const isOn=(r,col)=>!!allocCell&&allocCell.risk===r&&allocCell.col===col;
+  const matrix=`<table class="rmx"><thead><tr><th>${t('th_risk')}</th>${cols.map(c=>`<th class="num rhead${isOn('',c.id)?' sel':''}" title="${esc(t('alloc_col_tip',{p:c.label}))}" onclick="setAllocCell('','${c.id}')">${esc(c.label)}${c.sub?`<div class="hint" style="font-weight:400">${esc(c.sub)}</div>`:''}</th>`).join('')}<th class="num">${t('total_word')}</th></tr></thead><tbody>${
+    R.map(r=>`<tr><td class="rhead${isOn(r,'')?' sel':''}" title="${esc(t('alloc_row_tip'))}" onclick="setAllocCell('${r}','')"><span class="badge ${RISK_CLS[r]}">${t('risk_'+r.toLowerCase())}</span></td>${cols.map(col=>{const l=cell(r,col.id),L=flagCount(l,'Listed'),F=flagCount(l,'FRA Regulated');
+      return `<td class="num rcell r-${RISK_CLS[r]}${l.length?'':' empty0'}${isOn(r,col.id)?' sel':''}" onclick="setAllocCell('${r}','${col.id}')"><b>${l.length}</b>${(L||F)?`<div class="rflags">${L?`<span>${t('flag_listed_s')} ${L}</span>`:''}${F?`<span>FRA ${F}</span>`:''}</div>`:''}</td>`;}).join('')}
+      <td class="num rhead${isOn(r,'')?' sel':''}" onclick="setAllocCell('${r}','')"><b>${pool.filter(c=>risk[c.id].level===r).length}</b></td></tr>`).join('')}
+    <tr class="rtot"><td>${t('total_word')}</td>${cols.map(col=>{const l=cell('',col.id);return `<td class="num rhead${isOn('',col.id)?' sel':''}" onclick="setAllocCell('','${col.id}')"><b>${l.length}</b>${fin?`<div class="hint">${money(l.reduce((s,c)=>s+auditRev(c),0))}</div>`:''}</td>`;}).join('')}<td class="num rhead" onclick="allocCell=null;renderAllocation()"><b>${pool.length}</b></td></tr></tbody></table>`;
   let list=allocCell?cell(allocCell.risk,allocCell.col):pool;
   const order={High:0,Medium:1,Low:2};
   list=list.slice().sort((a,b)=>(order[risk[a.id].level]-order[risk[b.id].level])||(auditRev(b)-auditRev(a))||(a.name||'').localeCompare(b.name||''));
@@ -2171,7 +2179,8 @@ function renderAllocation(){
       <div style="padding:8px 16px 0;font-size:12.5px;font-weight:600">${recon}</div>
       <div class="hint" style="padding:8px 16px 12px">${t('risk_method')}</div></div>
     ${bulk}
-    <div class="panel"><h3>${allocCell?t('alloc_cell_title',{r:t('risk_'+allocCell.risk.toLowerCase()),p:(cols.find(c=>c.id===allocCell.col)||{}).label||''})+` <a href="#" onclick="allocCell=null;renderAllocation();return false" class="hint">${t('show_all_cells')}</a>`:t('alloc_list_title')} <span class="hint">(${list.length})</span></h3>
+    <div class="panel"><h3>${allocCell?(()=>{const p=(cols.find(c=>c.id===allocCell.col)||{}).label||'', r=allocCell.risk?t('risk_'+allocCell.risk.toLowerCase()):'';
+      return !allocCell.risk?t('alloc_col_title',{p:esc(p)}):!allocCell.col?t('alloc_row_title',{r}):t('alloc_cell_title',{r,p:esc(p)});})()+` <a href="#" onclick="allocCell=null;renderAllocation();return false" class="hint">${t('show_all_cells')}</a>`:t('alloc_list_title')} <span class="hint">(${list.length})</span></h3>
       <div class="hint" style="padding:0 16px 6px">${legend}</div>
       ${list.length?`<div style="overflow-x:auto"><table><thead><tr><th><input type="checkbox" ${allSel?'checked':''} onchange="allocSelectAll('${ids.join(',')}',this.checked)"></th><th>${t('th_risk')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th>${t('th_flags')}</th><th>${t('th_ye')}</th>${fin?`<th class="num">${t('th_audit_rev')}</th>`:''}<th>${t('th_signing_partner')}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>${list.length>400?`<div class="hint" style="padding:8px 16px">${t('showing_first',{n:400,total:list.length})}</div>`:''}`:`<div class="empty">${t('al_none')}</div>`}</div>
     ${removedPanel}`;
