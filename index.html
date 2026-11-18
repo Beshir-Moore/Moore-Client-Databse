@@ -253,7 +253,7 @@
     </div>
     <div class="row2">
       <div class="field"><label data-i18n="l_year_end">Financial year-end</label><select id="cYearEnd"></select></div>
-      <div></div>
+      <div class="field"><label data-i18n="l_client_status">Client status</label><select id="cStatus"><option value="active" data-i18n="cs_active">Current client</option><option value="former" data-i18n="cs_former">Former client (no longer a client)</option></select></div>
     </div>
     <div class="row2" id="cKycRow">
       <div class="field"><label data-i18n="l_kyc_completed">KYC/AML completed</label>
@@ -351,6 +351,7 @@
     <div class="field"><label data-i18n="ar_reason">Reason</label><select id="arReason"></select></div>
     <div class="field"><label data-i18n="ar_note">Note (optional)</label><textarea id="arNote" rows="2"></textarea></div>
     <div class="hint" data-i18n="ar_hint">The client stays in the database with its partner and engagements — it is only taken off the Audit allocation page. You can restore it any time from “Removed from audit list” at the bottom of the page.</div>
+    <div class="hint" id="arFormerHint" style="display:none;margin-top:8px;color:#b23b3b" data-i18n="ar_former_hint">“No longer a client” also marks the client as a former client across the app: it leaves the client list and all totals. Reactivate it from Client list → Former clients.</div>
   </div>
   <div class="foot"><button onclick="closeModal('ovAuditRemove')" data-i18n="cancel">Cancel</button><button class="primary" onclick="saveAuditRemove()" data-i18n="ar_confirm">Remove</button></div>
 </div></div>
@@ -532,8 +533,9 @@ const I18N={
   l_year_end:"Financial year-end", ye_not_set:"Not set", th_ye:"Year-end", set_ye:"Set year-end…", ye_short:"Year-end {d}",
   a_confirm_ye:"Set the year-end of {n} client(s) to {d}?",
   notify_btn:"✉ Notify partners", notify_title:"Notify partners & directors of their audit clients",
-  notify_hint:"Each email lists the person's audit clients with risk, Listed / FRA and year-end; clients added since their last notice are marked NEW. Click ✉ Email: your email app opens a new message addressed to them and the email text is copied — click in the message body, press Ctrl+V (on a phone: long-press → Paste), then Send.",
-  th_person:"Partner / director", l_email:"Email", th_audit_clients:"Audit clients", th_changes:"Since last notice", th_last_notified:"Last notified",
+  notify_hint:"Each email first sets out the person's new audit client allocation (risk, Listed / FRA, year-end), then describes what changed: the clients added (and who had them before) and the clients removed (and why). The first email compares with the Nov 2026 client distribution; later emails compare with the last email sent. Click ✉ Email: your email app opens a new message addressed to them and the email is copied — click in the message body, press Ctrl+V (on a phone: long-press → Paste), then Send.",
+  th_person:"Partner / director", l_email:"Email", th_audit_clients:"Audit clients", th_changes:"Changes", th_last_notified:"Last emailed",
+  vs_base:"vs Nov 2026 distribution", vs_last:"since email of {d}",
   first_notice:"First notice", no_changes:"No changes", n_high:"{n} high risk", n_no_ye:"{n} without year-end", preview:"Preview", email_btn:"Email",
   email_all:"✉ One email to all", copy_btn:"Copy",
   notify_copied:"Email opened for {n} and the text is copied — click in the message body, press Ctrl+V, then Send.",
@@ -543,14 +545,31 @@ const I18N={
   a_bad_email:"Please enter a valid email address.", copied_ok:"Copied",
   em_subject:"Audit client allocation — {n} — {d}", em_subject_all:"Audit client allocation — {d}",
   em_dear:"Dear {n},", em_dear_all:"Dear all,",
-  em_intro:"Please find below your audit client allocation as at {d}: {n} clients ({h} high, {m} medium and {l} low risk).",
-  em_intro_all:"Please find below the audit client allocation as at {d}.", em_section:"{n} — {c} clients ({h} high risk)",
-  em_changes:"Changes since the last notice on {d}: {a} added (marked NEW), {r} removed.", em_removed:"No longer allocated",
+  em_intro:"Following the audit allocation review, please find below your new audit client allocation as at {d}: {n} clients ({h} high, {m} medium and {l} low risk).",
+  em_intro_changes:"The clients added to and removed from your list are described after the table.",
+  em_intro_all:"Following the audit allocation review, please find below the new audit client allocation as at {d}, followed for each partner by the clients added and removed.", em_section:"{n} — {c} clients ({h} high risk)",
+  em_h_alloc:"Your new audit client allocation ({n} clients)", em_no_clients:"No audit clients are currently allocated.",
+  em_h_changes:"What changed compared with {s}", em_since_base:"the Nov 2026 client distribution ({d})", em_since_last:"our previous email of {d}",
+  em_no_changes:"No clients were added or removed.",
+  em_added:"Added to your clients ({n})", em_added_none:"Added to your clients: none",
+  em_removed_h:"Removed from your clients ({n})", em_removed_none:"Removed from your clients: none",
+  em_th_prev:"Previously with", em_th_why:"Reason / now with",
+  prev_unalloc:"Not allocated", prev_new:"New client",
+  rm_moved:"Moved to {p}", rm_former:"No longer a client", rm_unalloc:"Not allocated at present",
   em_th_flags:"Listed / FRA", em_th_ye:"Year-end", new_tag:"NEW",
   em_close:"Please let me know if you have any questions or if anything should change.", em_regards:"Kind regards,",
   alloc_show_all:"Also show tax / other-services-only clients",
   alloc_recon:"Client list {t} = on this page {s} + removed from audit list {r}",
   alloc_recon_hidden:" + not shown {h} (tax / other services only, no audit — tick “Also show tax / other-services-only clients”)", no_signers:"No audit signers set yet — tick “Audit signer” for people in ⚙ Settings → Partners, directors & managers.",
+  alloc_recon_former:"{n} former clients (no longer clients) are not in the client list — see Client list → Former clients.",
+  l_client_status:"Client status", cs_active:"Current client", cs_former:"Former client (no longer a client)",
+  list_count:"{n} clients", list_former_note:"former clients are listed at the bottom ({n})",
+  former_title:"Former clients", former_hint:"no longer clients: kept for history, not counted in the client list or any totals",
+  th_former_since:"Former since", former_badge:"Former", reactivate:"Reactivate",
+  former_banner:"Former client — no longer a client. Not shown in the client list or counted in totals.", former_since:"since {d}",
+  a_confirm_former:"Mark {name} as a former client? It will leave the client list and all totals.",
+  a_confirm_reactivate:"Reactivate {name} as a current client? It returns to the client list and totals (and to the audit allocation page if it was removed as “No longer a client”).",
+  ar_former_hint:"“No longer a client” also marks the client as a former client across the app: it leaves the client list and all totals. Reactivate it from Client list → Former clients.",
   risk_matrix:"Risk matrix", risk_matrix_hint:"— audits by risk level and partner (red counts = listed / FRA regulated)",
   risk_method:"Risk is calculated automatically: Listed +3, FRA regulated +3, PIE +2, transnational +1, financial-sector industry +1, KYC risk rating High +3 / Medium +1, A&C engagement risk High +2 / Medium +1. 3+ points = High, 1–2 = Medium, 0 = Low. Equity partners can override any client (✎). Click Listed / FRA / PIE on a client to set its classification.",
   alloc_cell_title:"{r} risk · {p}", show_all_cells:"show all", alloc_list_title:"Audit clients", risk_override_btn:"Risk…", assign_to:"allocate to",
@@ -699,8 +718,9 @@ const I18N={
   l_year_end:"نهاية السنة المالية", ye_not_set:"غير محددة", th_ye:"نهاية السنة", set_ye:"تحديد نهاية السنة…", ye_short:"نهاية السنة {d}",
   a_confirm_ye:"تحديد نهاية السنة المالية لـ {n} عميل إلى {d}؟",
   notify_btn:"✉ إخطار الشركاء", notify_title:"إخطار الشركاء والمديرين بعملاء المراجعة",
-  notify_hint:"يعرض كل بريد عملاء المراجعة للشخص مع درجة المخاطر والإدراج / الرقابة المالية ونهاية السنة؛ ويُميَّز العملاء المضافون منذ آخر إخطار بكلمة «جديد». اضغط ✉ بريد: يفتح تطبيق البريد رسالة جديدة موجهة إليه ويُنسخ نص الرسالة — اضغط داخل نص الرسالة ثم Ctrl+V (على الهاتف: ضغطة مطوّلة ← لصق) ثم أرسل.",
-  th_person:"الشريك / المدير", l_email:"البريد الإلكتروني", th_audit_clients:"عملاء المراجعة", th_changes:"منذ آخر إخطار", th_last_notified:"آخر إخطار",
+  notify_hint:"يعرض كل بريد أولًا التوزيع الجديد لعملاء المراجعة للشخص (المخاطر، الإدراج / الرقابة المالية، نهاية السنة)، ثم يوضح التغييرات: العملاء المضافون (ومن كانوا معه سابقًا) والعملاء المُزالون (والسبب). أول بريد يُقارن بتوزيع العملاء لشهر نوفمبر 2026، والرسائل التالية تُقارن بآخر بريد مُرسل. اضغط ✉ بريد: يفتح تطبيق البريد رسالة جديدة موجهة إليه ويُنسخ نص الرسالة — اضغط داخل نص الرسالة ثم Ctrl+V (على الهاتف: ضغطة مطوّلة ← لصق) ثم أرسل.",
+  th_person:"الشريك / المدير", l_email:"البريد الإلكتروني", th_audit_clients:"عملاء المراجعة", th_changes:"التغييرات", th_last_notified:"آخر بريد",
+  vs_base:"مقارنة بتوزيع نوفمبر 2026", vs_last:"منذ بريد {d}",
   first_notice:"أول إخطار", no_changes:"لا تغييرات", n_high:"{n} عالية المخاطر", n_no_ye:"{n} بدون نهاية سنة", preview:"معاينة", email_btn:"بريد",
   email_all:"✉ بريد واحد للجميع", copy_btn:"نسخ",
   notify_copied:"تم فتح رسالة إلى {n} ونسخ النص — اضغط داخل نص الرسالة ثم Ctrl+V ثم أرسل.",
@@ -710,14 +730,31 @@ const I18N={
   a_bad_email:"يرجى إدخال بريد إلكتروني صحيح.", copied_ok:"تم النسخ",
   em_subject:"توزيع عملاء المراجعة — {n} — {d}", em_subject_all:"توزيع عملاء المراجعة — {d}",
   em_dear:"عزيزي {n}،", em_dear_all:"الزملاء الأعزاء،",
-  em_intro:"تجدون أدناه توزيع عملاء المراجعة الخاص بكم في {d}: {n} عميل ({h} عالية، {m} متوسطة، {l} منخفضة المخاطر).",
-  em_intro_all:"تجدون أدناه توزيع عملاء المراجعة في {d}.", em_section:"{n} — {c} عميل ({h} عالية المخاطر)",
-  em_changes:"التغييرات منذ آخر إخطار في {d}: إضافة {a} (مميّزة بكلمة جديد)، وإزالة {r}.", em_removed:"لم يعد موزّعًا",
+  em_intro:"بعد مراجعة توزيع عملاء المراجعة، تجدون أدناه التوزيع الجديد لعملائكم في {d}: {n} عميل ({h} عالية، {m} متوسطة، {l} منخفضة المخاطر).",
+  em_intro_changes:"ويلي الجدول بيان العملاء المضافين إلى قائمتكم والمُزالين منها.",
+  em_intro_all:"بعد مراجعة توزيع عملاء المراجعة، تجدون أدناه التوزيع الجديد في {d}، ويلي كل شريك بيان العملاء المضافين والمُزالين.", em_section:"{n} — {c} عميل ({h} عالية المخاطر)",
+  em_h_alloc:"التوزيع الجديد لعملاء المراجعة ({n} عميل)", em_no_clients:"لا يوجد عملاء مراجعة موزّعون حاليًا.",
+  em_h_changes:"التغييرات مقارنة بـ {s}", em_since_base:"توزيع العملاء لشهر نوفمبر 2026 ({d})", em_since_last:"بريدنا السابق بتاريخ {d}",
+  em_no_changes:"لم تتم إضافة أو إزالة أي عميل.",
+  em_added:"أُضيفوا إلى عملائكم ({n})", em_added_none:"أُضيفوا إلى عملائكم: لا يوجد",
+  em_removed_h:"أُزيلوا من عملائكم ({n})", em_removed_none:"أُزيلوا من عملائكم: لا يوجد",
+  em_th_prev:"كان سابقًا مع", em_th_why:"السبب / أصبح مع",
+  prev_unalloc:"غير موزّع", prev_new:"عميل جديد",
+  rm_moved:"نُقل إلى {p}", rm_former:"لم يعد عميلًا", rm_unalloc:"غير موزّع حاليًا",
   em_th_flags:"مدرجة / رقابة مالية", em_th_ye:"نهاية السنة", new_tag:"جديد",
   em_close:"يرجى إبلاغي بأي استفسار أو إذا كان هناك ما يلزم تغييره.", em_regards:"مع التحية،",
   alloc_show_all:"عرض عملاء الضرائب / الخدمات الأخرى فقط أيضًا",
   alloc_recon:"قائمة العملاء {t} = في هذه الصفحة {s} + المُزالون من قائمة المراجعة {r}",
   alloc_recon_hidden:" + غير معروضين {h} (ضرائب / خدمات أخرى فقط بدون مراجعة — فعّل «عرض عملاء الضرائب / الخدمات الأخرى فقط أيضًا»)", no_signers:"لم يتم تحديد الموقّعين بعد — حدد «موقّع مراجعة» من ⚙ الإعدادات.",
+  alloc_recon_former:"{n} عملاء سابقون (لم يعودوا عملاء) غير مدرجين في قائمة العملاء — انظر قائمة العملاء ← العملاء السابقون.",
+  l_client_status:"حالة العميل", cs_active:"عميل حالي", cs_former:"عميل سابق (لم يعد عميلًا)",
+  list_count:"{n} عميل", list_former_note:"العملاء السابقون في أسفل الصفحة ({n})",
+  former_title:"العملاء السابقون", former_hint:"لم يعودوا عملاء: محفوظون للسجل، ولا يُحتسبون في قائمة العملاء أو أي إجماليات",
+  th_former_since:"عميل سابق منذ", former_badge:"سابق", reactivate:"إعادة تفعيل",
+  former_banner:"عميل سابق — لم يعد عميلًا. لا يظهر في قائمة العملاء ولا يُحتسب في الإجماليات.", former_since:"منذ {d}",
+  a_confirm_former:"تحديد {name} كعميل سابق؟ سيُزال من قائمة العملاء وجميع الإجماليات.",
+  a_confirm_reactivate:"إعادة تفعيل {name} كعميل حالي؟ سيعود إلى قائمة العملاء والإجماليات (وإلى صفحة توزيع المراجعة إن كان قد أُزيل بسبب «لم يعد عميلًا»).",
+  ar_former_hint:"اختيار «لم يعد عميلًا» يحدد العميل أيضًا كعميل سابق في التطبيق كله: يُزال من قائمة العملاء وجميع الإجماليات. يمكن إعادة تفعيله من قائمة العملاء ← العملاء السابقون.",
   risk_matrix:"مصفوفة المخاطر", risk_matrix_hint:"— المراجعات حسب مستوى المخاطر والشريك (الأرقام الحمراء = مُدرجة / خاضعة للهيئة)",
   risk_method:"تُحسب المخاطر تلقائيًا: مُدرجة +3، خاضعة للهيئة +3، مصلحة عامة +2، عابرة للحدود +1، قطاع مالي +1، تصنيف KYC مرتفع +3 / متوسط +1، مخاطر التكليف مرتفعة +2 / متوسطة +1. 3 نقاط فأكثر = مرتفع، 1–2 = متوسط، صفر = منخفض. يمكن للشركاء المساهمين تعديل أي عميل (✎).",
   alloc_cell_title:"مخاطر {r} · {p}", show_all_cells:"عرض الكل", alloc_list_title:"عملاء المراجعة", risk_override_btn:"المخاطر…", assign_to:"توزيع على",
@@ -869,7 +906,11 @@ async function loadAll(){
     sb.from('rates').select('*'),
     sb.from('app_settings').select('*'),
   ]);
-  data.clients=cl.data||[]; data.engagements=eng.data||[];
+  // former clients (no longer clients) are kept apart: out of the client list and every total, still openable for history
+  const allC=cl.data||[], allE=eng.data||[];
+  data.formerClients=allC.filter(c=>c.former); const fIds=new Set(data.formerClients.map(c=>c.id));
+  data.clients=allC.filter(c=>!c.former);
+  data.engagements=allE.filter(e=>!fIds.has(e.client_id)); data.formerEngagements=allE.filter(e=>fIds.has(e.client_id));
   data.rates={}; (rt.data||[]).forEach(r=>data.rates[r.currency]=Number(r.rate_to_egp));
   data.policy={}; (st.data||[]).forEach(s=>data.policy[s.key]=s.value);
   if(can('manageUsers')||can('assignClients')){const pr=await sb.from('profiles').select('*'); data.profiles=pr.data||[];}
@@ -913,8 +954,9 @@ function setupChrome(){
 
 /* ============ HELPERS ============ */
 function toEGP(e){const c=clientById(e.client_id);return (Number(e.revenue)||0)*rateFor(c&&c.contract_currency);}
-function clientById(id){return data.clients.find(c=>c.id===id)}
-function engForClient(id){return data.engagements.filter(e=>e.client_id===id)}
+function clientById(id){return data.clients.find(c=>c.id===id)||(data.formerClients||[]).find(c=>c.id===id)}
+function engForClient(id){const l=data.engagements.filter(e=>e.client_id===id);return l.length?l:(data.formerEngagements||[]).filter(e=>e.client_id===id)}
+function allEngs(){return data.engagements.concat(data.formerEngagements||[])}
 function searchTerm(){return $('search').value.trim().toLowerCase()}
 function filteredClients(){const q=searchTerm();return data.clients.filter(c=>{if(!svcFilterMatch(c))return false;if(!q)return true;const g=groupOf(c);
   return (c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q)||(g&&((g.name||'').toLowerCase().includes(q)||(g.group_code||'').toLowerCase().includes(q)));});}
@@ -1262,9 +1304,10 @@ function renderEng(){
 
 function renderList(){
   const el=$('listTable'); const list=filteredClients();
-  if(!list.length){el.innerHTML='<div class="empty">'+t('no_clients')+'</div>';return}
+  const fp=formerPanel();
+  if(!list.length){el.innerHTML='<div class="empty">'+t('no_clients')+'</div>'+fp;return}
   const assign=can('assignClients');
-  el.innerHTML=`<table><thead><tr><th>${t('th_readiness')}</th><th>${t('th_industry')}</th><th>${t('th_classification')}</th><th>${t('th_services')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th class="num">${t('th_engagements')}</th><th></th></tr></thead><tbody>${
+  el.innerHTML=`<div class="hint" style="padding:0 16px 8px">${t('list_count',{n:list.length})}${(data.formerClients||[]).length?' · '+t('list_former_note',{n:data.formerClients.length}):''}</div><table><thead><tr><th>${t('th_readiness')}</th><th>${t('th_industry')}</th><th>${t('th_classification')}</th><th>${t('th_services')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th class="num">${t('th_engagements')}</th><th></th></tr></thead><tbody>${
     list.map(c=>{const svc=[...new Set(engForClient(c.id).map(e=>e.service_line).filter(Boolean))];
     return `<tr><td>${statusCell(c)}</td>
       <td>${esc(c.industry||'—')}</td>
@@ -1273,7 +1316,35 @@ function renderList(){
       <td class="code">${c.client_code}</td>
       <td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span>${groupChip(groupOf(c))}${distLine(c)}</td>
       <td class="num">${engForClient(c.id).length}</td>
-      <td class="rowact">${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit')}</button>`:''}${assign?`<button onclick="openAssign('${c.id}')">${t('assign')}</button>`:''}</td></tr>`;}).join('')}</tbody></table>`;
+      <td class="rowact">${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit')}</button>`:''}${assign?`<button onclick="openAssign('${c.id}')">${t('assign')}</button>`:''}</td></tr>`;}).join('')}</tbody></table>${fp}`;
+}
+/* ---- former clients: out of the client list and totals; listed here, reactivatable ---- */
+let showFormer=false;
+function formerPanel(){
+  const all=data.formerClients||[]; if(!all.length)return '';
+  const q=searchTerm();
+  const list=all.filter(c=>!q||(c.name||'').toLowerCase().includes(q)||String(c.client_code).includes(q)).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const edit=can('editClients');
+  return `<div style="border-top:1px solid var(--line);margin-top:14px;padding:12px 16px 4px"><span class="linkname" onclick="showFormer=!showFormer;renderList()">${showFormer?'▾':'▸'} ${t('former_title')}</span> <span class="hint">(${all.length}) — ${t('former_hint')}</span></div>
+    ${showFormer?(list.length?`<div style="overflow-x:auto"><table><thead><tr><th>${t('th_code')}</th><th>${t('th_client')}</th><th>${t('dist_partner')}</th><th>${t('th_former_since')}</th><th></th></tr></thead><tbody>${list.map(c=>`<tr style="opacity:.8">
+      <td class="code">${c.client_code}</td><td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span> <span class="badge">${t('former_badge')}</span>${c.audit_excluded_note?`<div class="sub2">${esc(c.audit_excluded_note)}</div>`:''}</td>
+      <td>${esc(personName(c.partner_person)||'—')}</td>
+      <td class="hint">${c.former_at?fmtDate(String(c.former_at).slice(0,10)):''}${c.former_by?`<div>${esc(c.former_by)}</div>`:''}</td>
+      <td class="rowact">${edit?`<button onclick="setFormer('${c.id}',false)">${t('reactivate')}</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${t('no_clients')}</div>`):''}`;
+}
+// fields to write when a client becomes former / current again (reactivating also undoes a "No longer a client" audit removal)
+function formerFields(c,on){
+  if(!!(c&&c.former)===on)return {};
+  const f={former:on,former_at:on?new Date().toISOString():null,former_by:on?((state.user&&state.user.email)||null):null};
+  if(!on&&c&&c.audit_excluded&&c.audit_excluded_reason==='former')Object.assign(f,{audit_excluded:false,audit_excluded_reason:null,audit_excluded_note:null,audit_excluded_at:null,audit_excluded_by:null});
+  return f;
+}
+async function setFormer(id,on){
+  const c=clientById(id); if(!c||!can('editClients'))return;
+  if(!confirm(t(on?'a_confirm_former':'a_confirm_reactivate',{name:c.name})))return;
+  const {error}=await sb.from('clients').update(formerFields(c,on)).eq('id',id);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  await refresh();
 }
 
 /* ---- client page ---- */
@@ -1304,6 +1375,7 @@ function renderClient(){
       <td>${e.letter_file?`📎 <a href="#" onclick="openLetter('${esc(e.letter_file)}');return false">${t('view_file')}</a>`:'—'}</td></tr>`).join('');
   $('clientView').innerHTML=`
    <button class="backbtn" onclick="closeClient()">${t('back')}</button>
+   ${c.former?`<div class="panel" style="margin-bottom:12px;padding:10px 16px;border-inline-start:4px solid #b23b3b;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span><b>${t('former_banner')}</b>${c.former_at?` <span class="hint">${t('former_since',{d:fmtDate(String(c.former_at).slice(0,10))})}</span>`:''}</span>${can('editClients')?`<button onclick="setFormer('${c.id}',false)">${t('reactivate')}</button>`:''}</div>`:''}
    <div class="panel" style="margin-bottom:16px"><div style="padding:18px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
      <div style="display:flex;gap:14px;align-items:flex-start">${c.logo_file?`<img id="clientLogoImg" class="clogo" alt="${esc(c.name)}">`:''}<div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)}${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
        <div class="sub2">${[c.industry,ctStr(c.client_types),c.legal_structure,contract,c.year_end_month?t('ye_short',{d:yeLabel(c.year_end_month)}):''].filter(Boolean).map(esc).join(' · ')}</div>${distLine(c)}
@@ -1466,7 +1538,8 @@ function openClientModal(id){
   const ctset=new Set((c&&c.client_types)||[]);
   document.querySelectorAll('#cTypeBox input').forEach(cb=>cb.checked=ctset.has(cb.value));
   $('cLegal').value=c?c.legal_structure||'':''; $('cCurrency').value=c?c.contract_currency||'EGP':'EGP';
-  $('cYearEnd').innerHTML=yeOptions(c?c.year_end_month:'');
+  $('cYearEnd').innerHTML=yeOptions(c?c.year_end_month:12);
+  $('cStatus').value=(c&&c.former)?'former':'active';
   $('cKyc').value=(c&&c.kyc_completed)?'yes':'no'; $('cKycDate').value=c?c.kyc_last_review||'':'';
   $('cAc').value=(c&&c.ac_completed)?'yes':'no'; $('cAcDate').value=c?c.ac_date||'':'';
   const manual=can('manualCompliance'); // compliance staff complete KYC/A&C only through an approved questionnaire
@@ -1487,6 +1560,7 @@ async function saveClient(){
     client_types:ctypes.length?ctypes:null,
     legal_structure:$('cLegal').value||null,contract_currency:$('cCurrency').value,
     year_end_month:+$('cYearEnd').value||null,
+    ...formerFields(id?clientById(id):null,$('cStatus').value==='former'),
     kyc_completed:$('cKyc').value==='yes', kyc_last_review:$('cKycDate').value||null,
     ac_completed:$('cAc').value==='yes', ac_date:$('cAcDate').value||null,
     group_id:$('cGroup').value||null,
@@ -1552,7 +1626,7 @@ async function removeLogo(clientId,path){
   await refresh();
 }
 function openEngModal(clientId,engId){
-  const e=engId?data.engagements.find(x=>x.id===engId):null;
+  const e=engId?allEngs().find(x=>x.id===engId):null;
   $('engModalTitle').textContent=engId?t('m_edit_eng'):t('m_add_eng');
   $('eClientId').value=clientId; $('ovEng').dataset.id=engId||'';
   const seedYear=e?e.year:((clientYearFilter&&clientYearFilter!=='all')?+clientYearFilter:null);
@@ -1626,10 +1700,10 @@ async function removeLetter(engId,path){
   const cur=$('eFileCurrent'); if(cur&&$('ovEng').classList.contains('show'))cur.textContent=t('no_file');
   await refresh();
 }
-async function toggleStatus(id){const e=data.engagements.find(x=>x.id===id);if(!e)return;
+async function toggleStatus(id){const e=allEngs().find(x=>x.id===id);if(!e)return;
   await sb.from('engagements').update({status:(e.status||'Open')==='Open'?'Closed':'Open'}).eq('id',id);await refresh();}
 async function delEngagement(id){if(!confirm(t('a_delete_eng')))return;
-  const e=data.engagements.find(x=>x.id===id);
+  const e=allEngs().find(x=>x.id===id);
   if(e&&e.letter_file){try{await sb.storage.from('engagement-letters').remove([e.letter_file]);}catch(_){}}
   const {error}=await sb.from('engagements').delete().eq('id',id);if(error){alert(error.message);return}await refresh();}
 
@@ -2044,7 +2118,8 @@ function renderAllocation(){
   const removedList=fc.filter(c=>c.audit_excluded).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   const pool=fc.filter(c=>!c.audit_excluded&&(allocShowAll||inAuditScope(c,sIds)));
   const hiddenN=fc.length-pool.length-removedList.length;
-  const recon=`${t('alloc_recon',{t:fc.length,s:pool.length,r:removedList.length})}${hiddenN?t('alloc_recon_hidden',{h:hiddenN}):''}`;
+  const nFormer=(data.formerClients||[]).length;
+  const recon=`${t('alloc_recon',{t:fc.length,s:pool.length,r:removedList.length})}${hiddenN?t('alloc_recon_hidden',{h:hiddenN}):''}${nFormer?`<div class="hint" style="font-weight:400">${t('alloc_recon_former',{n:nFormer})}</div>`:''}`;
   [...allocSel].forEach(id=>{if(!pool.some(c=>c.id===id))allocSel.delete(id);});
   const cols=[...signers.map(p=>({id:p.id,label:p.full_name,sub:t('title_'+(p.title||'Partner').toLowerCase())}))];
   if(pool.some(c=>allocCol(c,sIds)==='__other'))cols.push({id:'__other',label:t('alloc_other'),sub:''});
@@ -2112,13 +2187,16 @@ function openAuditRemove(ids){
   ids=(ids||[]).filter(Boolean); if(!ids.length||!can('assignClients'))return; arIds=ids;
   $('arWho').textContent=ids.length===1?((clientById(ids[0])||{}).name||''):t('n_selected',{n:ids.length});
   $('arReason').innerHTML=['not_audit','former','lost','other'].map(k=>`<option value="${k}">${esc(t('ar_r_'+k))}</option>`).join('');
-  $('arNote').value=''; $('ovAuditRemove').classList.add('show');
+  $('arReason').onchange=()=>{$('arFormerHint').style.display=$('arReason').value==='former'?'':'none'};
+  $('arNote').value=''; $('arFormerHint').style.display='none'; $('ovAuditRemove').classList.add('show');
 }
 async function saveAuditRemove(){
   const reason=$('arReason').value, note=$('arNote').value.trim();
   if(reason==='other'&&!note){alert(t('a_ar_note'));return}
+  const now=new Date().toISOString(), by=(state.user&&state.user.email)||null;
   const {error}=await sb.from('clients').update({audit_excluded:true,audit_excluded_reason:reason,audit_excluded_note:note||null,
-    audit_excluded_at:new Date().toISOString(),audit_excluded_by:(state.user&&state.user.email)||null}).in('id',arIds);
+    audit_excluded_at:now,audit_excluded_by:by,
+    ...(reason==='former'?{former:true,former_at:now,former_by:by}:{})}).in('id',arIds);  // "No longer a client" = former client app-wide
   if(error){alert(t('a_could_not_save')+error.message);return}
   arIds.forEach(id=>allocSel.delete(id)); arIds=[]; closeModal('ovAuditRemove'); await refresh();
 }
@@ -2135,22 +2213,46 @@ async function setYearEnd(ids,m){
 }
 
 /* ---- notify partners / directors of their audit allocation ---- */
-let notifyNotices=[];
+let notifyNotices=[];   // newest first; kind 'baseline' = allocation per the Nov 2026 distribution sheet, 'notice' = an email sent
 function auditPoolAll(){const sIds=new Set(auditSigners().map(p=>p.id));return data.clients.filter(c=>!c.audit_excluded&&inAuditScope(c,sIds));}
 function notifyPeople(){
   const pool=auditPoolAll(), ids=new Set(auditSigners().map(p=>p.id));
   pool.forEach(c=>{if(c.partner_person)ids.add(c.partner_person)});
+  const base=notifyNotices.find(n=>n.kind==='baseline');
   return [...ids].map(personById).filter(p=>p&&p.active!==false).map(p=>{
     const list=pool.filter(c=>c.partner_person===p.id), last=notifyNotices.find(n=>n.person_id===p.id);
-    const prev=last?new Set(last.client_ids||[]):null;
-    return {p,list,last,added:prev?list.filter(c=>!prev.has(c.id)):[],
+    const lastSent=notifyNotices.find(n=>n.person_id===p.id&&n.kind!=='baseline');
+    // compare with this person's last email, else with the Nov 2026 distribution (nobody listed there = had no clients)
+    const prev=last?new Set(last.client_ids||[]):base?new Set():null;
+    const since=last?last.sent_at:base?base.sent_at:null;
+    return {p,list,lastSent,since,sinceBase:!!since&&(!last||last.kind==='baseline'),
+      added:prev?list.filter(c=>!prev.has(c.id)):[],
       removed:prev?[...prev].filter(id=>!list.some(c=>c.id===id)).map(clientById).filter(Boolean):[]};
   }).sort((a,b)=>(a.p.full_name||'').localeCompare(b.p.full_name||''));
 }
 function noticeRow(pid){return notifyPeople().find(r=>r.p.id===pid);}
+// who had the client at the comparison date (other people's latest record on or before it)
+function prevHolder(cid,pid,since){
+  const t0=since?new Date(since):null, seen=new Set();
+  for(const n of notifyNotices){
+    if(n.person_id===pid||seen.has(n.person_id)||(t0&&new Date(n.sent_at)>t0))continue;
+    seen.add(n.person_id); if((n.client_ids||[]).includes(cid))return personName(n.person_id)||'—';
+  }
+  return null;
+}
+function addedFrom(c,r){const h=prevHolder(c.id,r.p.id,r.since); if(h)return h;
+  return (r.since&&c.created_at&&new Date(c.created_at)>new Date(r.since))?t('prev_new'):t('prev_unalloc');}
+function removedWhy(c,r){
+  if(c.former)return t('rm_former');
+  if(c.audit_excluded)return t('ar_r_'+(c.audit_excluded_reason||'other'))+(c.audit_excluded_note?' — '+c.audit_excluded_note:'');
+  if(c.partner_person&&c.partner_person!==r.p.id)return t('rm_moved',{p:personName(c.partner_person)});
+  if(!c.partner_person)return t('rm_unalloc');
+  return t('ar_r_not_audit');
+}
+function sinceTxt(r){const d=fmtDate(String(r.since||'').slice(0,10));return r.sinceBase?t('em_since_base',{d}):t('em_since_last',{d});}
 async function openNotify(){
   if(!can('assignClients'))return;
-  const {data:rows,error}=await sb.from('audit_alloc_notices').select('person_id,client_ids,sent_at,sent_by').order('sent_at',{ascending:false}).limit(1000);
+  const {data:rows,error}=await sb.from('audit_alloc_notices').select('person_id,client_ids,sent_at,sent_by,kind').order('sent_at',{ascending:false}).limit(1000);
   notifyNotices=error?[]:(rows||[]); if(error)console.warn('notices:',error.message);
   renderNotify(); $('ovNotify').classList.add('show');
 }
@@ -2159,11 +2261,12 @@ function renderNotify(){
   $('notifyBody').innerHTML=`<div class="hint" style="margin-bottom:10px">${t('notify_hint')}</div>
     <div style="overflow-x:auto"><table><thead><tr><th>${t('th_person')}</th><th>${t('l_email')}</th><th class="num">${t('th_audit_clients')}</th><th>${t('th_changes')}</th><th>${t('th_last_notified')}</th><th></th></tr></thead><tbody>${rows.map(r=>{
       const h=r.list.filter(c=>clientRisk(c).level==='High').length, noYe=r.list.filter(c=>!c.year_end_month).length;
-      const ch=!r.last?`<span class="hint">${t('first_notice')}</span>`:(r.added.length||r.removed.length)?`<span class="badge yellow">+${r.added.length} / −${r.removed.length}</span>`:`<span class="hint">${t('no_changes')}</span>`;
+      const vs=r.since?`<div class="hint">${r.sinceBase?t('vs_base'):t('vs_last',{d:fmtDate(String(r.since).slice(0,10))})}</div>`:'';
+      const ch=!r.since?`<span class="hint">${t('first_notice')}</span>`:(r.added.length||r.removed.length)?`<span class="badge yellow">+${r.added.length} / −${r.removed.length}</span>${vs}`:`<span class="hint">${t('no_changes')}</span>${vs}`;
       return `<tr><td><b>${esc(r.p.full_name)}</b><div class="hint">${esc(t('title_'+(r.p.title||'Partner').toLowerCase()))}</div></td>
         <td><input type="email" value="${esc(r.p.email||'')}" placeholder="name@moore-eg.com" style="min-width:210px" onchange="savePersonEmail('${r.p.id}',this)"></td>
         <td class="num"><b>${r.list.length}</b>${h?`<div class="hint">${t('n_high',{n:h})}</div>`:''}${noYe?`<div class="hint" style="color:#8a5a00">${t('n_no_ye',{n:noYe})}</div>`:''}</td>
-        <td>${ch}</td><td class="hint">${r.last?fmtDate(String(r.last.sent_at).slice(0,10)):'—'}</td>
+        <td>${ch}</td><td class="hint">${r.lastSent?fmtDate(String(r.lastSent.sent_at).slice(0,10)):'—'}</td>
         <td class="rowact"><button onclick="previewNotice('${r.p.id}')">${t('preview')}</button> <button class="primary" ${r.list.length||r.removed.length?'':'disabled'} onclick="emailNotice('${r.p.id}')">✉ ${t('email_btn')}</button></td></tr>`;}).join('')}</tbody></table></div>
     <div id="notifyMsg" style="margin-top:12px"></div><div id="notifyPreview" style="margin-top:10px"></div>`;
 }
@@ -2180,39 +2283,59 @@ function senderName(){
   return (p&&p.full_name)||(state.profile&&state.profile.full_name)||em;
 }
 const NRISK={High:0,Medium:1,Low:2}, NCOL={High:['#fde2e2','#b23b3b'],Medium:['#fff4cc','#8a5a00'],Low:['#e3f5ec','#1f7a4d']};
+const ETH='border:1px solid #004C6C;padding:6px 8px;text-align:start;background:#004C6C;color:#ffffff', ETD='border:1px solid #d9d9d9;padding:5px 8px;text-align:start;';
 function noticeSorted(r){return r.list.slice().sort((a,b)=>(NRISK[clientRisk(a).level]-NRISK[clientRisk(b).level])||(a.name||'').localeCompare(b.name||''));}
 function noticeFlags(c){return (c.client_types||[]).filter(x=>x==='Listed'||x==='FRA Regulated').map(x=>x==='Listed'?t('flag_listed_s'):'FRA').join(', ');}
 function noticeCounts(list){const n=lv=>list.filter(c=>clientRisk(c).level===lv).length;return {h:n('High'),m:n('Medium'),l:n('Low')};}
+function yeTxt(c){return c.year_end_month?yeLabel(c.year_end_month):t('ye_not_set');}
+function emTable(head,rows){return `<table style="border-collapse:collapse;font-size:12px;font-family:Arial,Helvetica,sans-serif"><thead><tr>${head.map(h=>`<th style="${ETH}">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;}
+function riskTd(c){const lv=clientRisk(c).level;return `<td style="${ETD}background:${NCOL[lv][0]};color:${NCOL[lv][1]};font-weight:bold">${t('risk_'+lv.toLowerCase())}</td>`;}
+function emHead(txt){return `<p style="margin:16px 0 6px;font-weight:bold;color:#004C6C;font-size:14px">${txt}</p>`;}
+function emSub(txt){return `<p style="margin:10px 0 4px"><b>${txt}</b></p>`;}
+// 1) the new allocation
 function noticeTableHtml(r){
-  const list=noticeSorted(r); if(!list.length)return '';
-  const added=new Set(r.added.map(c=>c.id)), cell='border:1px solid #d9d9d9;padding:5px 8px;text-align:start;';
-  const head=['#',t('th_code'),t('th_client'),t('th_risk'),t('em_th_flags'),t('em_th_ye')].map(h=>`<th style="border:1px solid #004C6C;padding:6px 8px;text-align:start;background:#004C6C;color:#ffffff">${h}</th>`).join('');
-  const body=list.map((c,i)=>{const lv=clientRisk(c).level;
-    return `<tr><td style="${cell}">${i+1}</td><td style="${cell}">${c.client_code}</td><td style="${cell}">${esc(c.name)}${added.has(c.id)?` <b style="color:#00AEEF">${t('new_tag')}</b>`:''}</td>
-      <td style="${cell}background:${NCOL[lv][0]};color:${NCOL[lv][1]};font-weight:bold">${t('risk_'+lv.toLowerCase())}</td><td style="${cell}">${noticeFlags(c)||'—'}</td>
-      <td style="${cell}">${c.year_end_month?yeLabel(c.year_end_month):t('ye_not_set')}</td></tr>`;}).join('');
-  return `<table style="border-collapse:collapse;font-size:12px;font-family:Arial,Helvetica,sans-serif"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  const list=noticeSorted(r); if(!list.length)return `<p><i>${t('em_no_clients')}</i></p>`;
+  const added=new Set(r.added.map(c=>c.id));
+  return emTable(['#',t('th_code'),t('th_client'),t('th_risk'),t('em_th_flags'),t('em_th_ye')],list.map((c,i)=>`<tr><td style="${ETD}">${i+1}</td><td style="${ETD}">${c.client_code}</td>
+    <td style="${ETD}">${esc(c.name)}${added.has(c.id)?` <b style="color:#00AEEF">${t('new_tag')}</b>`:''}</td>${riskTd(c)}<td style="${ETD}">${noticeFlags(c)||'—'}</td><td style="${ETD}">${yeTxt(c)}</td></tr>`));
 }
+// 2) what was added / removed since the comparison date
 function noticeChangesHtml(r){
-  if(!r.last||!(r.added.length||r.removed.length))return '';
-  return `<p>${t('em_changes',{d:fmtDate(String(r.last.sent_at).slice(0,10)),a:r.added.length,r:r.removed.length})}${r.removed.length?`<br>${t('em_removed')}: ${r.removed.map(c=>esc(c.name)).join(', ')}`:''}</p>`;
+  if(!r.since)return '';
+  let h=emHead(t('em_h_changes',{s:sinceTxt(r)}));
+  if(!r.added.length&&!r.removed.length)return h+`<p>${t('em_no_changes')}</p>`;
+  h+=emSub(r.added.length?t('em_added',{n:r.added.length}):t('em_added_none'));
+  if(r.added.length)h+=emTable([t('th_code'),t('th_client'),t('th_risk'),t('em_th_ye'),t('em_th_prev')],noticeSorted({list:r.added}).map(c=>`<tr><td style="${ETD}">${c.client_code}</td><td style="${ETD}">${esc(c.name)}</td>${riskTd(c)}<td style="${ETD}">${yeTxt(c)}</td><td style="${ETD}">${esc(addedFrom(c,r))}</td></tr>`));
+  h+=emSub(r.removed.length?t('em_removed_h',{n:r.removed.length}):t('em_removed_none'));
+  if(r.removed.length)h+=emTable([t('th_code'),t('th_client'),t('em_th_why')],r.removed.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(c=>`<tr><td style="${ETD}">${c.client_code}</td><td style="${ETD}">${esc(c.name)}</td><td style="${ETD}">${esc(removedWhy(c,r))}</td></tr>`));
+  return h;
 }
-function noticeWrap(inner){return `<div dir="${state.lang==='ar'?'rtl':'ltr'}" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#222222">${inner}<p>${t('em_close')}</p><p>${t('em_regards')}<br>${esc(senderName())}</p></div>`;}
+function noticeWrap(inner){return `<div dir="${state.lang==='ar'?'rtl':'ltr'}" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#222222">${inner}<p style="margin-top:16px">${t('em_close')}</p><p>${t('em_regards')}<br>${esc(senderName())}</p></div>`;}
+function noticeIntro(r){const k=noticeCounts(r.list);return t('em_intro',{d:fmtDate(todayISO()),n:r.list.length,h:k.h,m:k.m,l:k.l})+(r.since?' '+t('em_intro_changes'):'');}
 function noticeHtml(r){
-  const k=noticeCounts(r.list), first=(r.p.full_name||'').split(/\s+/)[0];
-  return noticeWrap(`<p>${t('em_dear',{n:esc(first)})}</p><p>${t('em_intro',{d:fmtDate(todayISO()),n:r.list.length,h:k.h,m:k.m,l:k.l})}</p>${noticeChangesHtml(r)}${noticeTableHtml(r)}`);
+  const first=(r.p.full_name||'').split(/\s+/)[0];
+  return noticeWrap(`<p>${t('em_dear',{n:esc(first)})}</p><p>${noticeIntro(r)}</p>${emHead(t('em_h_alloc',{n:r.list.length}))}${noticeTableHtml(r)}${noticeChangesHtml(r)}`);
 }
 function noticeAllHtml(rows){
   return noticeWrap(`<p>${t('em_dear_all')}</p><p>${t('em_intro_all',{d:fmtDate(todayISO())})}</p>`+rows.map(r=>{const k=noticeCounts(r.list);
-    return `<h3 style="font-size:14px;color:#004C6C;margin:18px 0 6px">${esc(t('em_section',{n:r.p.full_name,c:r.list.length,h:k.h}))}</h3>${noticeChangesHtml(r)}${noticeTableHtml(r)}`;}).join(''));
+    return `<h3 style="font-size:15px;color:#004C6C;margin:22px 0 6px;border-bottom:2px solid #00AEEF;padding-bottom:3px">${esc(t('em_section',{n:r.p.full_name,c:r.list.length,h:k.h}))}</h3>${noticeTableHtml(r)}${noticeChangesHtml(r)}`;}).join(''));
 }
-function noticeTextRows(r){return noticeSorted(r).map((c,i)=>{const lv=clientRisk(c).level,f=noticeFlags(c);
-  return `${i+1}. ${c.name} (#${c.client_code}) — ${t('risk_'+lv.toLowerCase())}${f?' — '+f:''} — ${t('em_th_ye')}: ${c.year_end_month?yeLabel(c.year_end_month):t('ye_not_set')}${r.added.some(x=>x.id===c.id)?' — '+t('new_tag'):''}`;}).join('\n');}
-function htmlToText(html){const d=document.createElement('div');d.innerHTML=html;return d.innerText;}
-function noticeText(r){const k=noticeCounts(r.list),first=(r.p.full_name||'').split(/\s+/)[0];
-  return [t('em_dear',{n:first}),'',t('em_intro',{d:fmtDate(todayISO()),n:r.list.length,h:k.h,m:k.m,l:k.l}),htmlToText(noticeChangesHtml(r)),'',noticeTextRows(r),'',t('em_close'),'',t('em_regards'),senderName()].join('\n');}
+function noticeTextRows(r){if(!r.list.length)return t('em_no_clients');return noticeSorted(r).map((c,i)=>{const lv=clientRisk(c).level,f=noticeFlags(c);
+  return `${i+1}. ${c.name} (#${c.client_code}) — ${t('risk_'+lv.toLowerCase())}${f?' — '+f:''} — ${t('em_th_ye')}: ${yeTxt(c)}${r.added.some(x=>x.id===c.id)?' — '+t('new_tag'):''}`;}).join('\n');}
+function noticeChangesText(r){
+  if(!r.since)return '';
+  const L=[t('em_h_changes',{s:sinceTxt(r)})];
+  if(!r.added.length&&!r.removed.length){L.push(t('em_no_changes'));return L.join('\n');}
+  L.push(r.added.length?t('em_added',{n:r.added.length}):t('em_added_none'));
+  noticeSorted({list:r.added}).forEach(c=>L.push(`+ ${c.name} (#${c.client_code}) — ${t('risk_'+clientRisk(c).level.toLowerCase())} — ${t('em_th_ye')}: ${yeTxt(c)} — ${t('em_th_prev')}: ${addedFrom(c,r)}`));
+  L.push(r.removed.length?t('em_removed_h',{n:r.removed.length}):t('em_removed_none'));
+  r.removed.forEach(c=>L.push(`− ${c.name} (#${c.client_code}) — ${removedWhy(c,r)}`));
+  return L.join('\n');
+}
+function noticeText(r){const first=(r.p.full_name||'').split(/\s+/)[0];
+  return [t('em_dear',{n:first}),'',noticeIntro(r),'',t('em_h_alloc',{n:r.list.length}),noticeTextRows(r),'',noticeChangesText(r),'',t('em_close'),'',t('em_regards'),senderName()].join('\n');}
 function noticeAllText(rows){return [t('em_dear_all'),'',t('em_intro_all',{d:fmtDate(todayISO())}),'',...rows.map(r=>{const k=noticeCounts(r.list);
-  return t('em_section',{n:r.p.full_name,c:r.list.length,h:k.h})+'\n'+htmlToText(noticeChangesHtml(r))+'\n'+noticeTextRows(r)+'\n';}),t('em_close'),'',t('em_regards'),senderName()].join('\n');}
+  return t('em_section',{n:r.p.full_name,c:r.list.length,h:k.h})+'\n'+noticeTextRows(r)+'\n\n'+noticeChangesText(r)+'\n';}),t('em_close'),'',t('em_regards'),senderName()].join('\n');}
 // copy rich text (HTML table) + plain-text fallback; must be called straight from the click
 async function copyRich(html,text){
   try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]);return true;}
