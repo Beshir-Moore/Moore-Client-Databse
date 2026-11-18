@@ -72,6 +72,8 @@
   .flag.on{background:#b23b3b;border-color:#b23b3b;color:#fff;font-weight:700}
   .sgn{padding:3px 7px;margin-inline-end:3px;font-size:11px;font-weight:700;min-width:34px}
   .sgn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .yesel{padding:3px 4px;font-size:12px;width:auto}
+  .npreview{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:#fff;max-height:420px;overflow:auto}
   .movebar{position:sticky;top:0;z-index:5;margin-bottom:12px;border:1px solid var(--brand);background:var(--brand-soft)}
   .badge.grey{background:#eef1f8;color:#566079}
   .qgrid{display:grid;grid-template-columns:minmax(180px,34%) 1fr;gap:10px 16px;padding:14px 18px;align-items:start}
@@ -249,6 +251,10 @@
       <div class="field"><label data-i18n="l_legal">Legal structure</label><select id="cLegal"><option value="" data-i18n="opt_select">Select…</option><option>SAE</option><option>LLC</option><option>Partnership</option><option>Branch</option><option>Rep Office</option></select></div>
       <div class="field"><label data-i18n="l_currency">Contractual currency</label><select id="cCurrency"><option>EGP</option><option>USD</option><option>EUR</option><option>GBP</option><option>SAR</option><option>AED</option><option>KWD</option></select></div>
     </div>
+    <div class="row2">
+      <div class="field"><label data-i18n="l_year_end">Financial year-end</label><select id="cYearEnd"></select></div>
+      <div></div>
+    </div>
     <div class="row2" id="cKycRow">
       <div class="field"><label data-i18n="l_kyc_completed">KYC/AML completed</label>
         <select id="cKyc"><option value="no" data-i18n="no">No</option><option value="yes" data-i18n="yes">Yes</option></select></div>
@@ -328,6 +334,13 @@
     <div class="field"><label data-i18n="risk_reason">Reason for the override</label><textarea id="riskReason" rows="3"></textarea></div>
   </div>
   <div class="foot"><button onclick="closeModal('ovRisk')" data-i18n="cancel">Cancel</button><button class="primary" onclick="saveRiskOverride()" data-i18n="save">Save</button></div>
+</div></div>
+
+<!-- NOTIFY PARTNERS MODAL -->
+<div class="overlay" id="ovNotify"><div class="modal" style="max-width:1000px;width:96vw">
+  <h3 data-i18n="notify_title">Notify partners &amp; directors of their audit clients</h3>
+  <div class="body" id="notifyBody"></div>
+  <div class="foot"><button onclick="emailAllNotices()" data-i18n="email_all">✉ One email to all</button><button onclick="closeModal('ovNotify')" data-i18n="close">Close</button></div>
 </div></div>
 
 <!-- REMOVE FROM AUDIT LIST MODAL -->
@@ -516,6 +529,25 @@ const I18N={
   ar_confirm:"Remove", ar_r_not_audit:"Not an audit client (other services only)", ar_r_former:"No longer a client", ar_r_lost:"Audit lost / declined", ar_r_other:"Other (please explain)",
   a_ar_note:"Please add a note explaining the reason.", alloc_removed_title:"Removed from audit list", ar_restore:"Restore", th_removed:"Removed",
   a_confirm_unassign:"Unallocate {name} from {p}? It will move to “Not assigned”.",
+  l_year_end:"Financial year-end", ye_not_set:"Not set", th_ye:"Year-end", set_ye:"Set year-end…", ye_short:"Year-end {d}",
+  a_confirm_ye:"Set the year-end of {n} client(s) to {d}?",
+  notify_btn:"✉ Notify partners", notify_title:"Notify partners & directors of their audit clients",
+  notify_hint:"Each email lists the person's audit clients with risk, Listed / FRA and year-end; clients added since their last notice are marked NEW. Click ✉ Email: your email app opens a new message addressed to them and the email text is copied — click in the message body, press Ctrl+V (on a phone: long-press → Paste), then Send.",
+  th_person:"Partner / director", l_email:"Email", th_audit_clients:"Audit clients", th_changes:"Since last notice", th_last_notified:"Last notified",
+  first_notice:"First notice", no_changes:"No changes", n_high:"{n} high risk", n_no_ye:"{n} without year-end", preview:"Preview", email_btn:"Email",
+  email_all:"✉ One email to all", copy_btn:"Copy",
+  notify_copied:"Email opened for {n} and the text is copied — click in the message body, press Ctrl+V, then Send.",
+  notify_copied_all:"Email opened for everyone and the text is copied — click in the message body, press Ctrl+V, then Send.",
+  notify_copy_failed:"Couldn't copy automatically — select the preview below, copy it, and paste it into the email.",
+  notify_no_email:"No email saved for {n} — type it in the To line (or add it in the table so it fills in next time).",
+  a_bad_email:"Please enter a valid email address.", copied_ok:"Copied",
+  em_subject:"Audit client allocation — {n} — {d}", em_subject_all:"Audit client allocation — {d}",
+  em_dear:"Dear {n},", em_dear_all:"Dear all,",
+  em_intro:"Please find below your audit client allocation as at {d}: {n} clients ({h} high, {m} medium and {l} low risk).",
+  em_intro_all:"Please find below the audit client allocation as at {d}.", em_section:"{n} — {c} clients ({h} high risk)",
+  em_changes:"Changes since the last notice on {d}: {a} added (marked NEW), {r} removed.", em_removed:"No longer allocated",
+  em_th_flags:"Listed / FRA", em_th_ye:"Year-end", new_tag:"NEW",
+  em_close:"Please let me know if you have any questions or if anything should change.", em_regards:"Kind regards,",
   alloc_show_all:"Show all clients (not only audit clients)", no_signers:"No audit signers set yet — tick “Audit signer” for people in ⚙ Settings → Partners, directors & managers.",
   risk_matrix:"Risk matrix", risk_matrix_hint:"— audits by risk level and partner (red counts = listed / FRA regulated)",
   risk_method:"Risk is calculated automatically: Listed +3, FRA regulated +3, PIE +2, transnational +1, financial-sector industry +1, KYC risk rating High +3 / Medium +1, A&C engagement risk High +2 / Medium +1. 3+ points = High, 1–2 = Medium, 0 = Low. Equity partners can override any client (✎). Click Listed / FRA / PIE on a client to set its classification.",
@@ -662,6 +694,25 @@ const I18N={
   ar_confirm:"إزالة", ar_r_not_audit:"ليس عميل مراجعة (خدمات أخرى فقط)", ar_r_former:"لم يعد عميلًا", ar_r_lost:"فقدان / رفض المراجعة", ar_r_other:"أخرى (يرجى التوضيح)",
   a_ar_note:"يرجى إضافة ملاحظة توضح السبب.", alloc_removed_title:"المُزالون من قائمة المراجعة", ar_restore:"استعادة", th_removed:"تاريخ الإزالة",
   a_confirm_unassign:"إلغاء توزيع {name} من {p}؟ سينتقل إلى «غير موزّع».",
+  l_year_end:"نهاية السنة المالية", ye_not_set:"غير محددة", th_ye:"نهاية السنة", set_ye:"تحديد نهاية السنة…", ye_short:"نهاية السنة {d}",
+  a_confirm_ye:"تحديد نهاية السنة المالية لـ {n} عميل إلى {d}؟",
+  notify_btn:"✉ إخطار الشركاء", notify_title:"إخطار الشركاء والمديرين بعملاء المراجعة",
+  notify_hint:"يعرض كل بريد عملاء المراجعة للشخص مع درجة المخاطر والإدراج / الرقابة المالية ونهاية السنة؛ ويُميَّز العملاء المضافون منذ آخر إخطار بكلمة «جديد». اضغط ✉ بريد: يفتح تطبيق البريد رسالة جديدة موجهة إليه ويُنسخ نص الرسالة — اضغط داخل نص الرسالة ثم Ctrl+V (على الهاتف: ضغطة مطوّلة ← لصق) ثم أرسل.",
+  th_person:"الشريك / المدير", l_email:"البريد الإلكتروني", th_audit_clients:"عملاء المراجعة", th_changes:"منذ آخر إخطار", th_last_notified:"آخر إخطار",
+  first_notice:"أول إخطار", no_changes:"لا تغييرات", n_high:"{n} عالية المخاطر", n_no_ye:"{n} بدون نهاية سنة", preview:"معاينة", email_btn:"بريد",
+  email_all:"✉ بريد واحد للجميع", copy_btn:"نسخ",
+  notify_copied:"تم فتح رسالة إلى {n} ونسخ النص — اضغط داخل نص الرسالة ثم Ctrl+V ثم أرسل.",
+  notify_copied_all:"تم فتح رسالة للجميع ونسخ النص — اضغط داخل نص الرسالة ثم Ctrl+V ثم أرسل.",
+  notify_copy_failed:"تعذر النسخ تلقائيًا — حدد المعاينة أدناه وانسخها والصقها في الرسالة.",
+  notify_no_email:"لا يوجد بريد محفوظ لـ {n} — اكتبه في خانة «إلى» (أو أضفه في الجدول ليُملأ تلقائيًا لاحقًا).",
+  a_bad_email:"يرجى إدخال بريد إلكتروني صحيح.", copied_ok:"تم النسخ",
+  em_subject:"توزيع عملاء المراجعة — {n} — {d}", em_subject_all:"توزيع عملاء المراجعة — {d}",
+  em_dear:"عزيزي {n}،", em_dear_all:"الزملاء الأعزاء،",
+  em_intro:"تجدون أدناه توزيع عملاء المراجعة الخاص بكم في {d}: {n} عميل ({h} عالية، {m} متوسطة، {l} منخفضة المخاطر).",
+  em_intro_all:"تجدون أدناه توزيع عملاء المراجعة في {d}.", em_section:"{n} — {c} عميل ({h} عالية المخاطر)",
+  em_changes:"التغييرات منذ آخر إخطار في {d}: إضافة {a} (مميّزة بكلمة جديد)، وإزالة {r}.", em_removed:"لم يعد موزّعًا",
+  em_th_flags:"مدرجة / رقابة مالية", em_th_ye:"نهاية السنة", new_tag:"جديد",
+  em_close:"يرجى إبلاغي بأي استفسار أو إذا كان هناك ما يلزم تغييره.", em_regards:"مع التحية،",
   alloc_show_all:"عرض كل العملاء (وليس عملاء المراجعة فقط)", no_signers:"لم يتم تحديد الموقّعين بعد — حدد «موقّع مراجعة» من ⚙ الإعدادات.",
   risk_matrix:"مصفوفة المخاطر", risk_matrix_hint:"— المراجعات حسب مستوى المخاطر والشريك (الأرقام الحمراء = مُدرجة / خاضعة للهيئة)",
   risk_method:"تُحسب المخاطر تلقائيًا: مُدرجة +3، خاضعة للهيئة +3، مصلحة عامة +2، عابرة للحدود +1، قطاع مالي +1، تصنيف KYC مرتفع +3 / متوسط +1، مخاطر التكليف مرتفعة +2 / متوسطة +1. 3 نقاط فأكثر = مرتفع، 1–2 = متوسط، صفر = منخفض. يمكن للشركاء المساهمين تعديل أي عميل (✎).",
@@ -1251,7 +1302,7 @@ function renderClient(){
    <button class="backbtn" onclick="closeClient()">${t('back')}</button>
    <div class="panel" style="margin-bottom:16px"><div style="padding:18px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
      <div style="display:flex;gap:14px;align-items:flex-start">${c.logo_file?`<img id="clientLogoImg" class="clogo" alt="${esc(c.name)}">`:''}<div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)}${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
-       <div class="sub2">${[c.industry,ctStr(c.client_types),c.legal_structure,contract].filter(Boolean).map(esc).join(' · ')}</div>${distLine(c)}
+       <div class="sub2">${[c.industry,ctStr(c.client_types),c.legal_structure,contract,c.year_end_month?t('ye_short',{d:yeLabel(c.year_end_month)}):''].filter(Boolean).map(esc).join(' · ')}</div>${distLine(c)}
        ${can('seePortfolioDash')?`<div class="sub2" style="margin-top:4px">${t('th_risk')}: ${riskBadge(c)} <span class="hint">${esc(clientRisk(c).factors.join(' · '))}</span></div>`:''}
        ${c.notes?`<div class="sub2" style="margin-top:6px">${esc(c.notes)}</div>`:''}
        ${c.logo_file?`<div class="sub2" style="margin-top:6px"><a href="#" onclick="downloadLogo('${c.id}');return false">${t('download_logo')}</a></div>`:''}</div></div>
@@ -1411,6 +1462,7 @@ function openClientModal(id){
   const ctset=new Set((c&&c.client_types)||[]);
   document.querySelectorAll('#cTypeBox input').forEach(cb=>cb.checked=ctset.has(cb.value));
   $('cLegal').value=c?c.legal_structure||'':''; $('cCurrency').value=c?c.contract_currency||'EGP':'EGP';
+  $('cYearEnd').innerHTML=yeOptions(c?c.year_end_month:'');
   $('cKyc').value=(c&&c.kyc_completed)?'yes':'no'; $('cKycDate').value=c?c.kyc_last_review||'':'';
   $('cAc').value=(c&&c.ac_completed)?'yes':'no'; $('cAcDate').value=c?c.ac_date||'':'';
   const manual=can('manualCompliance'); // compliance staff complete KYC/A&C only through an approved questionnaire
@@ -1430,6 +1482,7 @@ async function saveClient(){
   const payload={name:$('cName').value.trim(),industry:$('cIndustry').value.trim()||null,
     client_types:ctypes.length?ctypes:null,
     legal_structure:$('cLegal').value||null,contract_currency:$('cCurrency').value,
+    year_end_month:+$('cYearEnd').value||null,
     kyc_completed:$('cKyc').value==='yes', kyc_last_review:$('cKycDate').value||null,
     ac_completed:$('cAc').value==='yes', ac_date:$('cAcDate').value||null,
     group_id:$('cGroup').value||null,
@@ -2006,13 +2059,16 @@ function renderAllocation(){
       <td>${riskBadge(c)}</td><td class="code">${c.client_code}</td>
       <td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span>${groupChip(groupOf(c))}<div class="sub2">${esc(c.industry||'')}</div></td>
       <td style="white-space:nowrap">${flagBtn(c,'Listed',t('flag_listed_s'))}${flagBtn(c,'FRA Regulated','FRA')}${flagBtn(c,'PIE','PIE')}</td>
+      <td><select class="yesel" onchange="setYearEnd(['${c.id}'],this.value)">${yeOptions(c.year_end_month)}</select></td>
       ${fin?`<td class="num money">${money(auditRev(c))}</td>`:''}
       <td style="white-space:nowrap">${signers.map(p=>`<button class="sgn${c.partner_person===p.id?' on':''}" title="${esc(p.full_name)}" onclick="${c.partner_person===p.id?`unassignAudit('${c.id}')`:`assignAudit(['${c.id}'],'${p.id}')`}">${esc(initials(p.full_name))}</button>`).join('')}
         ${c.partner_person&&!sIds.has(c.partner_person)?`<div class="hint">${esc(personName(c.partner_person))}</div>`:''}</td>
       <td class="rowact"><button onclick="openRiskOverride('${c.id}')">${t('risk_override_btn')}</button> <button onclick="openAuditRemove(['${c.id}'])">${t('alloc_remove_btn')}</button></td></tr>`;}).join('');
   const bulk=allocSel.size?`<div class="panel movebar"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px">
       <b>${t('n_selected',{n:allocSel.size})}</b> → ${t('assign_to')} ${signers.map(p=>`<button class="primary" onclick="assignAudit([...allocSel],'${p.id}')">${esc(p.full_name)}</button>`).join(' ')}
-      <button onclick="assignAudit([...allocSel],null)">${t('dist_none')}</button> <button onclick="openAuditRemove([...allocSel])">${t('alloc_remove_sel')}</button> <button onclick="allocSel.clear();renderAllocation()">${t('clear_sel')}</button></div></div>`:'';
+      <button onclick="assignAudit([...allocSel],null)">${t('dist_none')}</button> <button onclick="openAuditRemove([...allocSel])">${t('alloc_remove_sel')}</button>
+      <select onchange="if(this.value)setYearEnd([...allocSel],this.value)"><option value="">${t('set_ye')}</option>${[...Array(12)].map((_,i)=>`<option value="${i+1}">${yeLabel(i+1)}</option>`).join('')}</select>
+      <button onclick="allocSel.clear();renderAllocation()">${t('clear_sel')}</button></div></div>`:'';
   const removedPanel=removedList.length?`<div class="panel" style="margin-top:16px"><h3><span class="linkname" onclick="allocShowRemoved=!allocShowRemoved;renderAllocation()">${allocShowRemoved?'▾':'▸'} ${t('alloc_removed_title')}</span> <span class="hint">(${removedList.length})</span></h3>
       ${allocShowRemoved?`<div style="overflow-x:auto"><table><thead><tr><th>${t('th_code')}</th><th>${t('th_client')}</th><th>${t('ar_reason')}</th><th>${t('th_removed')}</th><th></th></tr></thead><tbody>${removedList.map(c=>`<tr>
         <td class="code">${c.client_code}</td><td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span></td>
@@ -2023,14 +2079,15 @@ function renderAllocation(){
   el.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
       <span class="hint">${t('alloc_hint')}</span>
-      <label class="rlabel" style="cursor:pointer"><input type="checkbox" ${allocShowAll?'checked':''} onchange="setAllocShowAll(this.checked)"> ${t('alloc_show_all')}</label></div>
+      <span style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label class="rlabel" style="cursor:pointer"><input type="checkbox" ${allocShowAll?'checked':''} onchange="setAllocShowAll(this.checked)"> ${t('alloc_show_all')}</label>
+      <button class="primary" onclick="openNotify()">${t('notify_btn')}</button></span></div>
     ${signers.length?'':`<div class="panel" style="padding:14px 18px;margin-bottom:14px;color:#b23b3b">${t('no_signers')}</div>`}
     <div class="panel" style="margin-bottom:16px"><h3>${t('risk_matrix')} <span class="hint">${t('risk_matrix_hint')}</span></h3><div style="overflow-x:auto">${matrix}</div>
       <div class="hint" style="padding:8px 16px 12px">${t('risk_method')}</div></div>
     ${bulk}
     <div class="panel"><h3>${allocCell?t('alloc_cell_title',{r:t('risk_'+allocCell.risk.toLowerCase()),p:(cols.find(c=>c.id===allocCell.col)||{}).label||''})+` <a href="#" onclick="allocCell=null;renderAllocation();return false" class="hint">${t('show_all_cells')}</a>`:t('alloc_list_title')} <span class="hint">(${list.length})</span></h3>
       <div class="hint" style="padding:0 16px 6px">${legend}</div>
-      ${list.length?`<div style="overflow-x:auto"><table><thead><tr><th><input type="checkbox" ${allSel?'checked':''} onchange="allocSelectAll('${ids.join(',')}',this.checked)"></th><th>${t('th_risk')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th>${t('th_flags')}</th>${fin?`<th class="num">${t('th_audit_rev')}</th>`:''}<th>${t('th_signing_partner')}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>${list.length>400?`<div class="hint" style="padding:8px 16px">${t('showing_first',{n:400,total:list.length})}</div>`:''}`:`<div class="empty">${t('al_none')}</div>`}</div>
+      ${list.length?`<div style="overflow-x:auto"><table><thead><tr><th><input type="checkbox" ${allSel?'checked':''} onchange="allocSelectAll('${ids.join(',')}',this.checked)"></th><th>${t('th_risk')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th>${t('th_flags')}</th><th>${t('th_ye')}</th>${fin?`<th class="num">${t('th_audit_rev')}</th>`:''}<th>${t('th_signing_partner')}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>${list.length>400?`<div class="hint" style="padding:8px 16px">${t('showing_first',{n:400,total:list.length})}</div>`:''}`:`<div class="empty">${t('al_none')}</div>`}</div>
     ${removedPanel}`;
 }
 async function unassignAudit(id){
@@ -2053,6 +2110,134 @@ async function saveAuditRemove(){
     audit_excluded_at:new Date().toISOString(),audit_excluded_by:(state.user&&state.user.email)||null}).in('id',arIds);
   if(error){alert(t('a_could_not_save')+error.message);return}
   arIds.forEach(id=>allocSel.delete(id)); arIds=[]; closeModal('ovAuditRemove'); await refresh();
+}
+/* ---- financial year-end (stored as month; day = last day of that month) ---- */
+const MONTH_END=[31,28,31,30,31,30,31,31,30,31,30,31];
+function yeLabel(m){m=+m;if(!m||m<1||m>12)return '';return MONTH_END[m-1]+' '+new Date(2001,m-1,1).toLocaleString(state.lang==='ar'?'ar-EG':'en-GB',{month:'short'});}
+function yeOptions(sel){return `<option value="">${t('ye_not_set')}</option>`+[...Array(12)].map((_,i)=>`<option value="${i+1}"${+sel===i+1?' selected':''}>${yeLabel(i+1)}</option>`).join('');}
+async function setYearEnd(ids,m){
+  ids=(ids||[]).filter(Boolean); if(!ids.length||!can('editClients'))return;
+  if(ids.length>1&&!confirm(t('a_confirm_ye',{n:ids.length,d:m?yeLabel(m):t('ye_not_set')}))){renderAllocation();return}
+  const {error}=await sb.from('clients').update({year_end_month:+m||null}).in('id',ids);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  if(ids.length>1)allocSel.clear(); await refresh();
+}
+
+/* ---- notify partners / directors of their audit allocation ---- */
+let notifyNotices=[];
+function auditPoolAll(){const sIds=new Set(auditSigners().map(p=>p.id));return data.clients.filter(c=>!c.audit_excluded&&(hasAudit(c)||sIds.has(c.partner_person)));}
+function notifyPeople(){
+  const pool=auditPoolAll(), ids=new Set(auditSigners().map(p=>p.id));
+  pool.forEach(c=>{if(c.partner_person)ids.add(c.partner_person)});
+  return [...ids].map(personById).filter(p=>p&&p.active!==false).map(p=>{
+    const list=pool.filter(c=>c.partner_person===p.id), last=notifyNotices.find(n=>n.person_id===p.id);
+    const prev=last?new Set(last.client_ids||[]):null;
+    return {p,list,last,added:prev?list.filter(c=>!prev.has(c.id)):[],
+      removed:prev?[...prev].filter(id=>!list.some(c=>c.id===id)).map(clientById).filter(Boolean):[]};
+  }).sort((a,b)=>(a.p.full_name||'').localeCompare(b.p.full_name||''));
+}
+function noticeRow(pid){return notifyPeople().find(r=>r.p.id===pid);}
+async function openNotify(){
+  if(!can('assignClients'))return;
+  const {data:rows,error}=await sb.from('audit_alloc_notices').select('person_id,client_ids,sent_at,sent_by').order('sent_at',{ascending:false}).limit(1000);
+  notifyNotices=error?[]:(rows||[]); if(error)console.warn('notices:',error.message);
+  renderNotify(); $('ovNotify').classList.add('show');
+}
+function renderNotify(){
+  const rows=notifyPeople();
+  $('notifyBody').innerHTML=`<div class="hint" style="margin-bottom:10px">${t('notify_hint')}</div>
+    <div style="overflow-x:auto"><table><thead><tr><th>${t('th_person')}</th><th>${t('l_email')}</th><th class="num">${t('th_audit_clients')}</th><th>${t('th_changes')}</th><th>${t('th_last_notified')}</th><th></th></tr></thead><tbody>${rows.map(r=>{
+      const h=r.list.filter(c=>clientRisk(c).level==='High').length, noYe=r.list.filter(c=>!c.year_end_month).length;
+      const ch=!r.last?`<span class="hint">${t('first_notice')}</span>`:(r.added.length||r.removed.length)?`<span class="badge yellow">+${r.added.length} / −${r.removed.length}</span>`:`<span class="hint">${t('no_changes')}</span>`;
+      return `<tr><td><b>${esc(r.p.full_name)}</b><div class="hint">${esc(t('title_'+(r.p.title||'Partner').toLowerCase()))}</div></td>
+        <td><input type="email" value="${esc(r.p.email||'')}" placeholder="name@moore-eg.com" style="min-width:210px" onchange="savePersonEmail('${r.p.id}',this)"></td>
+        <td class="num"><b>${r.list.length}</b>${h?`<div class="hint">${t('n_high',{n:h})}</div>`:''}${noYe?`<div class="hint" style="color:#8a5a00">${t('n_no_ye',{n:noYe})}</div>`:''}</td>
+        <td>${ch}</td><td class="hint">${r.last?fmtDate(String(r.last.sent_at).slice(0,10)):'—'}</td>
+        <td class="rowact"><button onclick="previewNotice('${r.p.id}')">${t('preview')}</button> <button class="primary" ${r.list.length||r.removed.length?'':'disabled'} onclick="emailNotice('${r.p.id}')">✉ ${t('email_btn')}</button></td></tr>`;}).join('')}</tbody></table></div>
+    <div id="notifyMsg" style="margin-top:12px"></div><div id="notifyPreview" style="margin-top:10px"></div>`;
+}
+async function savePersonEmail(pid,input){
+  const v=(input.value||'').trim();
+  if(v&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){alert(t('a_bad_email'));input.focus();return}
+  const {error}=await sb.from('people').update({email:v||null}).eq('id',pid);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  const p=personById(pid); if(p)p.email=v||null;
+}
+function senderName(){
+  const em=((state.user&&state.user.email)||'').toLowerCase();
+  const p=(data.persons||[]).find(x=>(x.email||'').toLowerCase()===em);
+  return (p&&p.full_name)||(state.profile&&state.profile.full_name)||em;
+}
+const NRISK={High:0,Medium:1,Low:2}, NCOL={High:['#fde2e2','#b23b3b'],Medium:['#fff4cc','#8a5a00'],Low:['#e3f5ec','#1f7a4d']};
+function noticeSorted(r){return r.list.slice().sort((a,b)=>(NRISK[clientRisk(a).level]-NRISK[clientRisk(b).level])||(a.name||'').localeCompare(b.name||''));}
+function noticeFlags(c){return (c.client_types||[]).filter(x=>x==='Listed'||x==='FRA Regulated').map(x=>x==='Listed'?t('flag_listed_s'):'FRA').join(', ');}
+function noticeCounts(list){const n=lv=>list.filter(c=>clientRisk(c).level===lv).length;return {h:n('High'),m:n('Medium'),l:n('Low')};}
+function noticeTableHtml(r){
+  const list=noticeSorted(r); if(!list.length)return '';
+  const added=new Set(r.added.map(c=>c.id)), cell='border:1px solid #d9d9d9;padding:5px 8px;text-align:start;';
+  const head=['#',t('th_code'),t('th_client'),t('th_risk'),t('em_th_flags'),t('em_th_ye')].map(h=>`<th style="border:1px solid #004C6C;padding:6px 8px;text-align:start;background:#004C6C;color:#ffffff">${h}</th>`).join('');
+  const body=list.map((c,i)=>{const lv=clientRisk(c).level;
+    return `<tr><td style="${cell}">${i+1}</td><td style="${cell}">${c.client_code}</td><td style="${cell}">${esc(c.name)}${added.has(c.id)?` <b style="color:#00AEEF">${t('new_tag')}</b>`:''}</td>
+      <td style="${cell}background:${NCOL[lv][0]};color:${NCOL[lv][1]};font-weight:bold">${t('risk_'+lv.toLowerCase())}</td><td style="${cell}">${noticeFlags(c)||'—'}</td>
+      <td style="${cell}">${c.year_end_month?yeLabel(c.year_end_month):t('ye_not_set')}</td></tr>`;}).join('');
+  return `<table style="border-collapse:collapse;font-size:12px;font-family:Arial,Helvetica,sans-serif"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+function noticeChangesHtml(r){
+  if(!r.last||!(r.added.length||r.removed.length))return '';
+  return `<p>${t('em_changes',{d:fmtDate(String(r.last.sent_at).slice(0,10)),a:r.added.length,r:r.removed.length})}${r.removed.length?`<br>${t('em_removed')}: ${r.removed.map(c=>esc(c.name)).join(', ')}`:''}</p>`;
+}
+function noticeWrap(inner){return `<div dir="${state.lang==='ar'?'rtl':'ltr'}" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#222222">${inner}<p>${t('em_close')}</p><p>${t('em_regards')}<br>${esc(senderName())}</p></div>`;}
+function noticeHtml(r){
+  const k=noticeCounts(r.list), first=(r.p.full_name||'').split(/\s+/)[0];
+  return noticeWrap(`<p>${t('em_dear',{n:esc(first)})}</p><p>${t('em_intro',{d:fmtDate(todayISO()),n:r.list.length,h:k.h,m:k.m,l:k.l})}</p>${noticeChangesHtml(r)}${noticeTableHtml(r)}`);
+}
+function noticeAllHtml(rows){
+  return noticeWrap(`<p>${t('em_dear_all')}</p><p>${t('em_intro_all',{d:fmtDate(todayISO())})}</p>`+rows.map(r=>{const k=noticeCounts(r.list);
+    return `<h3 style="font-size:14px;color:#004C6C;margin:18px 0 6px">${esc(t('em_section',{n:r.p.full_name,c:r.list.length,h:k.h}))}</h3>${noticeChangesHtml(r)}${noticeTableHtml(r)}`;}).join(''));
+}
+function noticeTextRows(r){return noticeSorted(r).map((c,i)=>{const lv=clientRisk(c).level,f=noticeFlags(c);
+  return `${i+1}. ${c.name} (#${c.client_code}) — ${t('risk_'+lv.toLowerCase())}${f?' — '+f:''} — ${t('em_th_ye')}: ${c.year_end_month?yeLabel(c.year_end_month):t('ye_not_set')}${r.added.some(x=>x.id===c.id)?' — '+t('new_tag'):''}`;}).join('\n');}
+function htmlToText(html){const d=document.createElement('div');d.innerHTML=html;return d.innerText;}
+function noticeText(r){const k=noticeCounts(r.list),first=(r.p.full_name||'').split(/\s+/)[0];
+  return [t('em_dear',{n:first}),'',t('em_intro',{d:fmtDate(todayISO()),n:r.list.length,h:k.h,m:k.m,l:k.l}),htmlToText(noticeChangesHtml(r)),'',noticeTextRows(r),'',t('em_close'),'',t('em_regards'),senderName()].join('\n');}
+function noticeAllText(rows){return [t('em_dear_all'),'',t('em_intro_all',{d:fmtDate(todayISO())}),'',...rows.map(r=>{const k=noticeCounts(r.list);
+  return t('em_section',{n:r.p.full_name,c:r.list.length,h:k.h})+'\n'+htmlToText(noticeChangesHtml(r))+'\n'+noticeTextRows(r)+'\n';}),t('em_close'),'',t('em_regards'),senderName()].join('\n');}
+// copy rich text (HTML table) + plain-text fallback; must be called straight from the click
+async function copyRich(html,text){
+  try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]);return true;}
+  catch(e){try{await navigator.clipboard.writeText(text);return true;}catch(_){return false;}}
+}
+function openMail(to,subject){const a=document.createElement('a');a.href=`mailto:${to.map(x=>x.trim()).filter(Boolean).join(',')}?subject=${encodeURIComponent(subject)}`;document.body.appendChild(a);a.click();a.remove();}
+async function recordNotices(rows){
+  const now=new Date().toISOString(), by=(state.user&&state.user.email)||null;
+  const recs=rows.map(r=>({person_id:r.p.id,client_ids:r.list.map(c=>c.id),sent_by:by}));
+  const {error}=await sb.from('audit_alloc_notices').insert(recs);
+  if(error){console.warn('notice log:',error.message);return}
+  recs.forEach(x=>notifyNotices.unshift({...x,sent_at:now}));
+}
+function showNoticePreview(html,plain){
+  $('notifyPreview').innerHTML=`<div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button id="npCopy">${t('copy_btn')}</button></div><div class="npreview">${html}</div>`;
+  $('npCopy').onclick=async()=>{if(await copyRich(html,plain))$('npCopy').textContent='✓ '+t('copied_ok');};
+}
+function previewNotice(pid){const r=noticeRow(pid); if(r)showNoticePreview(noticeHtml(r),noticeText(r));}
+async function emailNotice(pid){
+  const r=noticeRow(pid); if(!r)return;
+  const html=noticeHtml(r), text=noticeText(r);
+  const ok=await copyRich(html,text);
+  openMail([r.p.email||''],t('em_subject',{n:r.p.full_name,d:fmtDate(todayISO())}));
+  await recordNotices([r]); renderNotify();
+  $('notifyMsg').innerHTML=`<div class="panel" style="padding:10px 14px;border-inline-start:4px solid var(--brand)"><b>${ok?t('notify_copied',{n:esc(r.p.full_name)}):t('notify_copy_failed')}</b>${r.p.email?'':`<div class="hint">${t('notify_no_email',{n:esc(r.p.full_name)})}</div>`}</div>`;
+  showNoticePreview(html,text);
+}
+async function emailAllNotices(){
+  const rows=notifyPeople().filter(r=>r.list.length||r.removed.length); if(!rows.length)return;
+  const html=noticeAllHtml(rows), text=noticeAllText(rows);
+  const ok=await copyRich(html,text);
+  openMail(rows.map(r=>r.p.email||''),t('em_subject_all',{d:fmtDate(todayISO())}));
+  await recordNotices(rows); renderNotify();
+  const missing=rows.filter(r=>!r.p.email).map(r=>esc(r.p.full_name));
+  $('notifyMsg').innerHTML=`<div class="panel" style="padding:10px 14px;border-inline-start:4px solid var(--brand)"><b>${ok?t('notify_copied_all'):t('notify_copy_failed')}</b>${missing.length?`<div class="hint">${t('notify_no_email',{n:missing.join(', ')})}</div>`:''}</div>`;
+  showNoticePreview(html,text);
 }
 async function restoreAudit(id){
   const {error}=await sb.from('clients').update({audit_excluded:false,audit_excluded_reason:null,audit_excluded_note:null,audit_excluded_at:null,audit_excluded_by:null}).eq('id',id);
