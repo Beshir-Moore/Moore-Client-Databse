@@ -548,7 +548,9 @@ const I18N={
   em_changes:"Changes since the last notice on {d}: {a} added (marked NEW), {r} removed.", em_removed:"No longer allocated",
   em_th_flags:"Listed / FRA", em_th_ye:"Year-end", new_tag:"NEW",
   em_close:"Please let me know if you have any questions or if anything should change.", em_regards:"Kind regards,",
-  alloc_show_all:"Show all clients (not only audit clients)", no_signers:"No audit signers set yet — tick “Audit signer” for people in ⚙ Settings → Partners, directors & managers.",
+  alloc_show_all:"Also show tax / other-services-only clients",
+  alloc_recon:"Client list {t} = on this page {s} + removed from audit list {r}",
+  alloc_recon_hidden:" + not shown {h} (tax / other services only, no audit — tick “Also show tax / other-services-only clients”)", no_signers:"No audit signers set yet — tick “Audit signer” for people in ⚙ Settings → Partners, directors & managers.",
   risk_matrix:"Risk matrix", risk_matrix_hint:"— audits by risk level and partner (red counts = listed / FRA regulated)",
   risk_method:"Risk is calculated automatically: Listed +3, FRA regulated +3, PIE +2, transnational +1, financial-sector industry +1, KYC risk rating High +3 / Medium +1, A&C engagement risk High +2 / Medium +1. 3+ points = High, 1–2 = Medium, 0 = Low. Equity partners can override any client (✎). Click Listed / FRA / PIE on a client to set its classification.",
   alloc_cell_title:"{r} risk · {p}", show_all_cells:"show all", alloc_list_title:"Audit clients", risk_override_btn:"Risk…", assign_to:"allocate to",
@@ -713,7 +715,9 @@ const I18N={
   em_changes:"التغييرات منذ آخر إخطار في {d}: إضافة {a} (مميّزة بكلمة جديد)، وإزالة {r}.", em_removed:"لم يعد موزّعًا",
   em_th_flags:"مدرجة / رقابة مالية", em_th_ye:"نهاية السنة", new_tag:"جديد",
   em_close:"يرجى إبلاغي بأي استفسار أو إذا كان هناك ما يلزم تغييره.", em_regards:"مع التحية،",
-  alloc_show_all:"عرض كل العملاء (وليس عملاء المراجعة فقط)", no_signers:"لم يتم تحديد الموقّعين بعد — حدد «موقّع مراجعة» من ⚙ الإعدادات.",
+  alloc_show_all:"عرض عملاء الضرائب / الخدمات الأخرى فقط أيضًا",
+  alloc_recon:"قائمة العملاء {t} = في هذه الصفحة {s} + المُزالون من قائمة المراجعة {r}",
+  alloc_recon_hidden:" + غير معروضين {h} (ضرائب / خدمات أخرى فقط بدون مراجعة — فعّل «عرض عملاء الضرائب / الخدمات الأخرى فقط أيضًا»)", no_signers:"لم يتم تحديد الموقّعين بعد — حدد «موقّع مراجعة» من ⚙ الإعدادات.",
   risk_matrix:"مصفوفة المخاطر", risk_matrix_hint:"— المراجعات حسب مستوى المخاطر والشريك (الأرقام الحمراء = مُدرجة / خاضعة للهيئة)",
   risk_method:"تُحسب المخاطر تلقائيًا: مُدرجة +3، خاضعة للهيئة +3، مصلحة عامة +2، عابرة للحدود +1، قطاع مالي +1، تصنيف KYC مرتفع +3 / متوسط +1، مخاطر التكليف مرتفعة +2 / متوسطة +1. 3 نقاط فأكثر = مرتفع، 1–2 = متوسط، صفر = منخفض. يمكن للشركاء المساهمين تعديل أي عميل (✎).",
   alloc_cell_title:"مخاطر {r} · {p}", show_all_cells:"عرض الكل", alloc_list_title:"عملاء المراجعة", risk_override_btn:"المخاطر…", assign_to:"توزيع على",
@@ -2025,6 +2029,9 @@ let allocCell=null, allocShowAll=false, allocShowRemoved=false; const allocSel=n
 function auditSigners(){return (data.persons||[]).filter(p=>p.audit_signer&&p.active).sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));}
 function initials(n){return (n||'').split(/\s+/).filter(Boolean).map(w=>w[0]).join('').slice(0,3).toUpperCase()}
 function hasAudit(c){return engForClient(c.id).some(e=>deptOf(e.service_line)==='Audit & Assurance')}
+// on the audit page by default: audit engagement, allocated to an audit signer, or no engagements recorded yet (treated as audit);
+// hidden only when its recorded engagements are all non-audit (tax / legal / other) and it isn't allocated to a signer
+function inAuditScope(c,sIds){return hasAudit(c)||sIds.has(c.partner_person)||!engForClient(c.id).length}
 function allocCol(c,signerIds){return !c.partner_person?'__un':signerIds.has(c.partner_person)?c.partner_person:'__other'}
 function setAllocCell(risk,col){allocCell=(allocCell&&allocCell.risk===risk&&allocCell.col===col)?null:{risk,col};renderAllocation();}
 function setAllocShowAll(on){allocShowAll=on;renderAllocation();}
@@ -2033,8 +2040,11 @@ function allocSelectAll(ids,on){ids.split(',').filter(Boolean).forEach(id=>on?al
 function renderAllocation(){
   const el=$('allocTable'); if(!el)return;
   const signers=auditSigners(), sIds=new Set(signers.map(p=>p.id)), fin=can('seeFinancials');
-  const removedList=filteredClients().filter(c=>c.audit_excluded).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  const pool=filteredClients().filter(c=>!c.audit_excluded&&(allocShowAll||hasAudit(c)||sIds.has(c.partner_person)));
+  const fc=filteredClients();
+  const removedList=fc.filter(c=>c.audit_excluded).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const pool=fc.filter(c=>!c.audit_excluded&&(allocShowAll||inAuditScope(c,sIds)));
+  const hiddenN=fc.length-pool.length-removedList.length;
+  const recon=`${t('alloc_recon',{t:fc.length,s:pool.length,r:removedList.length})}${hiddenN?t('alloc_recon_hidden',{h:hiddenN}):''}`;
   [...allocSel].forEach(id=>{if(!pool.some(c=>c.id===id))allocSel.delete(id);});
   const cols=[...signers.map(p=>({id:p.id,label:p.full_name,sub:t('title_'+(p.title||'Partner').toLowerCase())}))];
   if(pool.some(c=>allocCol(c,sIds)==='__other'))cols.push({id:'__other',label:t('alloc_other'),sub:''});
@@ -2083,6 +2093,7 @@ function renderAllocation(){
       <button class="primary" onclick="openNotify()">${t('notify_btn')}</button></span></div>
     ${signers.length?'':`<div class="panel" style="padding:14px 18px;margin-bottom:14px;color:#b23b3b">${t('no_signers')}</div>`}
     <div class="panel" style="margin-bottom:16px"><h3>${t('risk_matrix')} <span class="hint">${t('risk_matrix_hint')}</span></h3><div style="overflow-x:auto">${matrix}</div>
+      <div style="padding:8px 16px 0;font-size:12.5px;font-weight:600">${recon}</div>
       <div class="hint" style="padding:8px 16px 12px">${t('risk_method')}</div></div>
     ${bulk}
     <div class="panel"><h3>${allocCell?t('alloc_cell_title',{r:t('risk_'+allocCell.risk.toLowerCase()),p:(cols.find(c=>c.id===allocCell.col)||{}).label||''})+` <a href="#" onclick="allocCell=null;renderAllocation();return false" class="hint">${t('show_all_cells')}</a>`:t('alloc_list_title')} <span class="hint">(${list.length})</span></h3>
@@ -2125,7 +2136,7 @@ async function setYearEnd(ids,m){
 
 /* ---- notify partners / directors of their audit allocation ---- */
 let notifyNotices=[];
-function auditPoolAll(){const sIds=new Set(auditSigners().map(p=>p.id));return data.clients.filter(c=>!c.audit_excluded&&(hasAudit(c)||sIds.has(c.partner_person)));}
+function auditPoolAll(){const sIds=new Set(auditSigners().map(p=>p.id));return data.clients.filter(c=>!c.audit_excluded&&inAuditScope(c,sIds));}
 function notifyPeople(){
   const pool=auditPoolAll(), ids=new Set(auditSigners().map(p=>p.id));
   pool.forEach(c=>{if(c.partner_person)ids.add(c.partner_person)});
