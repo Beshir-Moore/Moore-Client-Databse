@@ -54,6 +54,8 @@
   .tab.active{color:var(--brand);border-bottom-color:var(--brand)}
   .abadge{display:inline-block;min-width:18px;padding:1px 6px;margin-inline-start:6px;border-radius:9px;background:#d64352;color:#fff;font-size:11px;line-height:16px;letter-spacing:0;text-align:center}
   .abadge.amber{background:#e0a81e}
+  .tier{display:inline-block;min-width:22px;text-align:center;font-weight:800;border-radius:6px;padding:1px 6px;font-size:12px;line-height:18px}
+  .tier-a{background:#004C6C;color:#fff}.tier-b{background:#00AEEF;color:#fff}.tier-c{background:#e6e9ee;color:#333}
   .gchip{display:inline-block;padding:1px 8px;margin-inline-start:6px;border:1px solid var(--brand);border-radius:10px;color:var(--brand);font-size:11px;font-weight:700;cursor:pointer;vertical-align:1px;white-space:nowrap}
   .gchip:hover{background:var(--brand-soft)}
   .rankmode button{padding:5px 12px;font-size:12px}
@@ -564,6 +566,20 @@ const I18N={
   alloc_show_all:"Also show tax / other-services-only clients",
   alloc_recon:"Client list {t} = on this page {s} + removed from audit list {r}",
   alloc_recon_hidden:" + not shown {h} (tax / other services only, no audit — tick “Also show tax / other-services-only clients”)", no_signers:"No audit signers set yet — tick “Audit signer” for people in ⚙ Settings → Partners, directors & managers.",
+  tier_tip:"Fee tier, based on {y} fees: A = largest fees, then B, then C. Companies in a group take the group's tier.", tier_none_tip:"Not graded — no fees recorded for {y}",
+  via_group:"(group)", view_by:"View:", view_company:"Companies", view_group:"By group", n_groups:"{n} groups",
+  add_to_group:"add to group", choose_group:"Choose a group…", new_group_opt:"+ New group…", remove_from_group:"Take out of group",
+  th_tier:"Tier", tier_no_fees:"Tiers A / B / C: no fees recorded for {y} yet — every client shows “—” until fees are entered on engagements.",
+  tier_summary:"Tiers by {y} fees:", th_companies:"Companies", th_fees_y:"Fees {y}", group_empty_short:"(no companies yet)",
+  groups_title:"Groups ({n})", no_groups_yet:"No groups yet — create one, or tick companies in the Companies view and choose “add to group”.",
+  singles_title:"Single clients (not in a group)", singles_hint:"graded on their own fees",
+  p_new_group_name:"Name of the new group (e.g. Ezz Group):", a_confirm_add_group:"Add {n} companies to {g}?", a_confirm_ungroup:"Take {n} companies out of their group?",
+  group_word_suffix:"Group", suggest_title:"Suggested groups ({n})", suggest_hint:"— companies whose names share a word. Untick any that don't belong, adjust the name, then Create group.",
+  show_fewer:"Show fewer", show_all_n:"Show all {n} suggestions",
+  create_group:"Create group", not_a_group:"Not a group", a_group_two:"Tick at least 2 companies for a group.",
+  tier_basis:"(based on {y} fees; companies in a group take the group's tier)", tier_group_sub:"{y} fees {f}",
+  grading_title:"Client grading (tiers A / B / C)", grading_hint:"Groups are graded on their companies' combined fees; clients not in a group on their own fees. Clients and groups are ranked by fees: the top A% are tier A, the next B% tier B, the rest tier C. Clients with no fees show “—”.",
+  l_tier_a:"Tier A = top % (by fees)", l_tier_b:"Tier B = next %", l_tier_year:"Fees used", tier_current_year:"Current year ({y})", save_grading:"Save grading",
   alloc_recon_former:"{n} former clients (no longer clients) are not in the client list — see Client list → Former clients.",
   l_client_status:"Client status", cs_active:"Current client", cs_former:"Former client (no longer a client)",
   list_count:"{n} clients", list_former_note:"former clients are listed at the bottom ({n})",
@@ -751,6 +767,20 @@ const I18N={
   alloc_show_all:"عرض عملاء الضرائب / الخدمات الأخرى فقط أيضًا",
   alloc_recon:"قائمة العملاء {t} = في هذه الصفحة {s} + المُزالون من قائمة المراجعة {r}",
   alloc_recon_hidden:" + غير معروضين {h} (ضرائب / خدمات أخرى فقط بدون مراجعة — فعّل «عرض عملاء الضرائب / الخدمات الأخرى فقط أيضًا»)", no_signers:"لم يتم تحديد الموقّعين بعد — حدد «موقّع مراجعة» من ⚙ الإعدادات.",
+  tier_tip:"فئة الأتعاب حسب أتعاب {y}: A = الأعلى أتعابًا ثم B ثم C. شركات المجموعة تأخذ فئة المجموعة.", tier_none_tip:"غير مصنّف — لا توجد أتعاب مسجلة لـ {y}",
+  via_group:"(المجموعة)", view_by:"العرض:", view_company:"الشركات", view_group:"حسب المجموعة", n_groups:"{n} مجموعة",
+  add_to_group:"إضافة إلى مجموعة", choose_group:"اختر مجموعة…", new_group_opt:"+ مجموعة جديدة…", remove_from_group:"إخراج من المجموعة",
+  th_tier:"الفئة", tier_no_fees:"الفئات A / B / C: لا توجد أتعاب مسجلة لـ {y} بعد — يظهر «—» لكل عميل حتى تُدخل الأتعاب في الارتباطات.",
+  tier_summary:"الفئات حسب أتعاب {y}:", th_companies:"الشركات", th_fees_y:"أتعاب {y}", group_empty_short:"(لا توجد شركات بعد)",
+  groups_title:"المجموعات ({n})", no_groups_yet:"لا توجد مجموعات بعد — أنشئ مجموعة، أو حدد الشركات في عرض الشركات واختر «إضافة إلى مجموعة».",
+  singles_title:"عملاء منفردون (خارج المجموعات)", singles_hint:"يُصنّفون حسب أتعابهم",
+  p_new_group_name:"اسم المجموعة الجديدة (مثال: مجموعة عز):", a_confirm_add_group:"إضافة {n} شركة إلى {g}؟", a_confirm_ungroup:"إخراج {n} شركة من مجموعتها؟",
+  group_word_suffix:"Group", suggest_title:"مجموعات مقترحة ({n})", suggest_hint:"— شركات تتشارك كلمة في الاسم. ألغِ تحديد غير التابعة، وعدّل الاسم، ثم أنشئ المجموعة.",
+  show_fewer:"عرض أقل", show_all_n:"عرض كل الاقتراحات ({n})",
+  create_group:"إنشاء المجموعة", not_a_group:"ليست مجموعة", a_group_two:"حدد شركتين على الأقل للمجموعة.",
+  tier_basis:"(حسب أتعاب {y}؛ شركات المجموعة تأخذ فئة المجموعة)", tier_group_sub:"أتعاب {y}: {f}",
+  grading_title:"تصنيف العملاء (الفئات A / B / C)", grading_hint:"تُصنّف المجموعات حسب مجموع أتعاب شركاتها، والعملاء خارج المجموعات حسب أتعابهم. يُرتَّب العملاء والمجموعات حسب الأتعاب: أعلى A% فئة A، ثم B% التالية فئة B، والباقي فئة C. يظهر «—» لمن ليس له أتعاب.",
+  l_tier_a:"الفئة A = أعلى % (حسب الأتعاب)", l_tier_b:"الفئة B = النسبة التالية %", l_tier_year:"الأتعاب المعتمدة", tier_current_year:"السنة الحالية ({y})", save_grading:"حفظ التصنيف",
   alloc_recon_former:"{n} عملاء سابقون (لم يعودوا عملاء) غير مدرجين في قائمة العملاء — انظر قائمة العملاء ← العملاء السابقون.",
   l_client_status:"حالة العميل", cs_active:"عميل حالي", cs_former:"عميل سابق (لم يعد عميلًا)",
   list_count:"{n} عميل", list_former_note:"العملاء السابقون في أسفل الصفحة ({n})",
@@ -814,6 +844,7 @@ const CAP={
   manageRates:['partner','finance'], manageUsers:['partner'], assignClients:['partner'], // only the equity partners distribute clients / assign engagement partner & manager
   editClients:['partner','finance','office_admin','compliance','compliance_officer'], addClients:['partner','finance','office_admin','compliance','compliance_officer'],
   seeDashboard:['partner'],
+  seeTiers:['partner','finance'],   // A/B/C fee tiers need every client's fees, so only roles that see all clients + financials
 };
 // KYC questionnaire permissions are per person (Settings tick-boxes), not per role
 function kycPrep(){const p=state.profile||{};return !!(p.kyc_prepare||p.kyc_approve)}
@@ -916,7 +947,7 @@ async function loadAll(){
   // former clients (no longer clients) are kept apart: out of the client list and every total, still openable for history
   const allC=cl.data||[], allE=eng.data||[];
   data.formerClients=allC.filter(c=>c.former); const fIds=new Set(data.formerClients.map(c=>c.id));
-  data.clients=allC.filter(c=>!c.former);
+  data.clients=allC.filter(c=>!c.former); data._tiers=null;
   data.engagements=allE.filter(e=>!fIds.has(e.client_id)); data.formerEngagements=allE.filter(e=>fIds.has(e.client_id));
   data.rates={}; (rt.data||[]).forEach(r=>data.rates[r.currency]=Number(r.rate_to_egp));
   data.policy={}; (st.data||[]).forEach(s=>data.policy[s.key]=s.value);
@@ -1271,7 +1302,9 @@ function renderClients(){
   const codeOf=u=>u.type==='group'?(u.g.group_code||''):String(u.c.client_code);
   if(fin) units.sort((a,b)=>b.total-a.total); else units.sort((a,b)=>codeOf(a).localeCompare(codeOf(b),undefined,{numeric:true}));
   const svcChips=s=>s.map(x=>`<span class="chip">${esc(x)}</span>`).join('');
+  const tierOn=can('seeTiers');
   const clientRow=(r,rank,indent)=>`<tr${indent?' style="background:var(--brand-soft)"':''}><td class="rank ${!indent&&rank<=3&&fin?'top':''}">${fin&&!indent?rank:''}</td>
+      ${tierOn?`<td style="white-space:nowrap">${indent?'':clientTierCell(r.c)}</td>`:''}
       <td>${statusCell(r.c)}</td>
       <td class="code">${r.c.client_code}</td>
       <td${indent?' style="padding-inline-start:28px"':''}><span class="linkname" onclick="openClient('${r.c.id}')">${esc(r.c.name)}</span>${indent?'':groupChip(groupOf(r.c))}<div class="sub2">${[r.c.industry,ctStr(r.c.client_types),r.c.legal_structure,r.c.contract_currency].filter(Boolean).map(esc).join(' · ')}</div></td>
@@ -1282,6 +1315,7 @@ function renderClients(){
     if(u.type==='client') return clientRow(u,i+1,false);
     const st=groupStatus(u.members), isOpen=rankOpen.has(u.g.id);
     const head=`<tr><td class="rank ${i<3&&fin?'top':''}">${fin?i+1:''}</td>
+      ${tierOn?`<td>${tierBadge((tiers().byGroup[u.g.id]||{}).tier)}</td>`:''}
       <td><div class="statuscell">${statusDot(st)}<span class="rlabel">${esc(st.reasons[0])}</span></div></td>
       <td class="code">${esc(u.g.group_code)}</td>
       <td><span class="linkname" onclick="toggleRankGroup('${u.g.id}')">${isOpen?'▾':'▸'}</span> <span class="linkname" onclick="openGroup('${u.g.id}')">${esc(u.g.name)}</span> <span class="hint">${t('n_entities',{n:u.members.length})}</span></td>
@@ -1290,7 +1324,7 @@ function renderClients(){
       <td>${svcChips(u.services)}</td></tr>`;
     return head+(isOpen?u.rows.sort((a,b)=>fin?b.total-a.total:a.c.client_code-b.c.client_code).map(r=>clientRow(r,0,true)).join(''):'');
   }).join('');
-  el.innerHTML=toggle+`<table><thead><tr><th class="rank">#</th><th>${t('th_readiness')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th>${fin?'<th class="num">'+t('th_total_rev')+'</th>':''}<th class="num">${t('th_engagements')}</th><th>${t('th_service_lines')}</th></tr></thead><tbody>${body}</tbody></table>`;
+  el.innerHTML=toggle+`<table><thead><tr><th class="rank">#</th>${tierOn?`<th>${t('th_tier')}</th>`:''}<th>${t('th_readiness')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th>${fin?'<th class="num">'+t('th_total_rev')+'</th>':''}<th class="num">${t('th_engagements')}</th><th>${t('th_service_lines')}</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
 function renderEng(){
@@ -1309,21 +1343,161 @@ function renderEng(){
       <td>${statusChip(e.status)}</td></tr>`).join('')}</tbody></table>`;
 }
 
+/* ---- client grading: A / B / C fee tiers; a group is graded on its companies' combined fees, a single client on its own ---- */
+function tierPct(){const p=data.policy||{}, n=(v,d)=>v==null||v===''||isNaN(+v)?d:Math.max(0,+v);return {a:n(p.tier_a_pct,20),b:n(p.tier_b_pct,30)};}
+function tierYearSetting(){return (data.policy||{}).tier_year||'current';}
+function tierYear(){const v=tierYearSetting();return v==='all'?'all':v==='current'?new Date().getFullYear():+v;}
+function tierYearLabel(){const y=tierYear();return y==='all'?t('all_years'):String(y);}
+function feesOf(c,yr){return engForClient(c.id).filter(e=>yr==='all'||+e.year===+yr).reduce((s,e)=>s+toEGP(e),0);}
+function tiers(){
+  if(data._tiers)return data._tiers;
+  const yr=tierYear(), byG={}, units=[];
+  data.clients.forEach(c=>{const g=groupOf(c);
+    if(g)(byG[g.id]=byG[g.id]||{key:'g'+g.id,g,members:[]}).members.push(c); else units.push({key:'c'+c.id,c,members:[c]});});
+  units.push(...Object.values(byG));
+  units.forEach(u=>{u.fees=u.members.reduce((s,c)=>s+feesOf(c,yr),0);u.tier=null;});
+  const graded=units.filter(u=>u.fees>0).sort((a,b)=>b.fees-a.fees), p=tierPct();
+  const nA=Math.ceil(graded.length*p.a/100), nB=Math.ceil(graded.length*(p.a+p.b)/100);
+  graded.forEach((u,i)=>{u.tier=i<nA?'A':i<nB?'B':'C';u.rank=i+1;});
+  const byClient={}, byGroup={}; units.forEach(u=>{u.members.forEach(c=>byClient[c.id]=u); if(u.g)byGroup[u.g.id]=u;});
+  return data._tiers={units,byClient,byGroup,yr,graded:graded.length};
+}
+function tierBadge(tr,sub){return tr?`<span class="tier tier-${tr.toLowerCase()}" title="${esc(t('tier_tip',{y:tierYearLabel()}))}">${tr}</span>${sub?`<span class="hint" style="font-size:11px"> ${sub}</span>`:''}`:`<span class="hint" title="${esc(t('tier_none_tip',{y:tierYearLabel()}))}">—</span>`;}
+function clientTierCell(c){const u=tiers().byClient[c.id];return u?tierBadge(u.tier,u.g&&u.tier?t('via_group'):''):'';}
+
+/* ---- client list: by company or by group, with grouping tools ---- */
+let listView='company', listOpen=new Set(), showSingles=false, showSuggest=true; const listSel=new Set();
+function setListView(v){listView=v;renderList();}
+function listToggle(id,on){on?listSel.add(id):listSel.delete(id);renderList();}
+function listSelectAll(ids,on){ids.split(',').filter(Boolean).forEach(id=>on?listSel.add(id):listSel.delete(id));renderList();}
 function renderList(){
   const el=$('listTable'); const list=filteredClients();
-  const fp=formerPanel();
-  if(!list.length){el.innerHTML='<div class="empty">'+t('no_clients')+'</div>'+fp;return}
-  const assign=can('assignClients');
-  el.innerHTML=`<div class="hint" style="padding:0 16px 8px">${t('list_count',{n:list.length})}${(data.formerClients||[]).length?' · '+t('list_former_note',{n:data.formerClients.length}):''}</div><table><thead><tr><th>${t('th_readiness')}</th><th>${t('th_industry')}</th><th>${t('th_classification')}</th><th>${t('th_services')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th class="num">${t('th_engagements')}</th><th></th></tr></thead><tbody>${
+  const fp=formerPanel(), edit=can('editClients'), tierOn=can('seeTiers');
+  [...listSel].forEach(id=>{if(!list.some(c=>c.id===id))listSel.delete(id);});
+  const nG=(data.groups||[]).length;
+  const bar=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:0 16px 10px">
+    <span class="hint">${t('list_count',{n:list.length})}${nG?' · '+t('n_groups',{n:nG}):''}${(data.formerClients||[]).length?' · '+t('list_former_note',{n:data.formerClients.length}):''}</span>
+    <span class="rankmode" style="display:flex;gap:6px;align-items:center;font-size:12.5px;font-weight:600">${t('view_by')}
+      <button class="${listView==='company'?'primary':''}" onclick="setListView('company')">${t('view_company')}</button>
+      <button class="${listView==='group'?'primary':''}" onclick="setListView('group')">${t('view_group')}</button></span></div>
+    ${tierOn?`<div class="hint" style="padding:0 16px 10px">${tierSummary()}</div>`:''}`;
+  if(listView==='group'){el.innerHTML=bar+renderGroupView(list)+fp;return}
+  if(!list.length){el.innerHTML=bar+'<div class="empty">'+t('no_clients')+'</div>'+fp;return}
+  const assign=can('assignClients'), ids=list.map(c=>c.id), allSel=ids.length&&ids.every(id=>listSel.has(id));
+  const gOpts=(data.groups||[]).slice().sort((a,b)=>(a.group_code||'').localeCompare(b.group_code||'',undefined,{numeric:true})).map(g=>`<option value="${g.id}">${esc(g.group_code)} — ${esc(g.name)}</option>`).join('');
+  const bulk=edit&&listSel.size?`<div class="panel movebar" style="margin:0 0 10px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px">
+      <b>${t('n_selected',{n:listSel.size})}</b> → ${t('add_to_group')}
+      <select onchange="if(this.value)addSelToGroup(this.value)"><option value="">${t('choose_group')}</option><option value="__new">${t('new_group_opt')}</option>${gOpts}</select>
+      <button onclick="addSelToGroup(null)">${t('remove_from_group')}</button>
+      <button onclick="listSel.clear();renderList()">${t('clear_sel')}</button></div></div>`:'';
+  el.innerHTML=bar+bulk+`<table><thead><tr>${edit?`<th><input type="checkbox" ${allSel?'checked':''} onchange="listSelectAll('${ids.join(',')}',this.checked)"></th>`:''}${tierOn?`<th>${t('th_tier')}</th>`:''}<th>${t('th_readiness')}</th><th>${t('th_industry')}</th><th>${t('th_classification')}</th><th>${t('th_services')}</th><th>${t('th_code')}</th><th>${t('th_client')}</th><th class="num">${t('th_engagements')}</th><th></th></tr></thead><tbody>${
     list.map(c=>{const svc=[...new Set(engForClient(c.id).map(e=>e.service_line).filter(Boolean))];
-    return `<tr><td>${statusCell(c)}</td>
+    return `<tr>${edit?`<td><input type="checkbox" ${listSel.has(c.id)?'checked':''} onchange="listToggle('${c.id}',this.checked)"></td>`:''}
+      ${tierOn?`<td style="white-space:nowrap">${clientTierCell(c)}</td>`:''}
+      <td>${statusCell(c)}</td>
       <td>${esc(c.industry||'—')}</td>
       <td>${ctChips(c.client_types)}</td>
       <td>${svc.length?svc.map(s=>`<span class="chip">${esc(s)}</span>`).join(''):'—'}</td>
       <td class="code">${c.client_code}</td>
       <td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span>${groupChip(groupOf(c))}${distLine(c)}</td>
       <td class="num">${engForClient(c.id).length}</td>
-      <td class="rowact">${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit')}</button>`:''}${assign?`<button onclick="openAssign('${c.id}')">${t('assign')}</button>`:''}</td></tr>`;}).join('')}</tbody></table>${fp}`;
+      <td class="rowact">${edit?`<button onclick="openClientModal('${c.id}')">${t('edit')}</button>`:''}${assign?`<button onclick="openAssign('${c.id}')">${t('assign')}</button>`:''}</td></tr>`;}).join('')}</tbody></table>${fp}`;
+}
+function tierSummary(){
+  const T=tiers(), n=lv=>T.units.filter(u=>u.tier===lv), sum=l=>l.reduce((s,u)=>s+u.fees,0);
+  if(!T.graded)return t('tier_no_fees',{y:tierYearLabel()});
+  return t('tier_summary',{y:tierYearLabel()})+' '+['A','B','C'].map(lv=>`${tierBadge(lv)} ${n(lv).length} (${money(sum(n(lv)))})`).join(' · ')+` · <span title="${esc(t('tier_none_tip',{y:tierYearLabel()}))}">— ${T.units.length-T.graded}</span>`;
+}
+function renderGroupView(list){
+  const fin=can('seeFinancials'), tierOn=can('seeTiers'), edit=can('editClients'), T=tiers(), q=searchTerm();
+  const inList=new Set(list.map(c=>c.id));
+  const yr=tierYear(), fees=c=>feesOf(c,yr);
+  const groups=(data.groups||[]).map(g=>({g,members:groupMembers(g.id).filter(c=>inList.has(c.id)),all:groupMembers(g.id)}))
+    .filter(x=>x.members.length||(!q&&!($('svcDept')||{}).value)||(x.g.name||'').toLowerCase().includes(q)||(x.g.group_code||'').toLowerCase().includes(q));
+  const order={A:0,B:1,C:2};
+  groups.sort((a,b)=>{const ua=T.byGroup[a.g.id]||{},ub=T.byGroup[b.g.id]||{};
+    return tierOn?((order[ua.tier]??3)-(order[ub.tier]??3))||((ub.fees||0)-(ua.fees||0))||(a.g.group_code||'').localeCompare(b.g.group_code||'',undefined,{numeric:true})
+      :(a.g.group_code||'').localeCompare(b.g.group_code||'',undefined,{numeric:true});});
+  const singles=list.filter(c=>!c.group_id).sort((a,b)=>tierOn?((order[(T.byClient[a.id]||{}).tier]??3)-(order[(T.byClient[b.id]||{}).tier]??3))||(fees(b)-fees(a))||(a.name||'').localeCompare(b.name||''):(a.name||'').localeCompare(b.name||''));
+  const svcOf=cs=>[...new Set(cs.flatMap(c=>engForClient(c.id).map(e=>e.service_line)).filter(Boolean))];
+  const chips=s=>s.length?s.map(x=>`<span class="chip">${esc(x)}</span>`).join(''):'—';
+  const head=`<thead><tr><th></th>${tierOn?`<th>${t('th_tier')}</th>`:''}<th>${t('th_code')}</th><th>${t('th_client')}</th><th class="num">${t('th_companies')}</th>${fin?`<th class="num">${t('th_fees_y',{y:tierYearLabel()})}</th>`:''}<th>${t('th_services')}</th></tr></thead>`;
+  const memberRow=c=>`<tr style="background:var(--brand-soft)"><td></td>${tierOn?`<td></td>`:''}<td class="code">${c.client_code}</td>
+      <td style="padding-inline-start:28px"><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span><div class="sub2">${[c.industry,ctStr(c.client_types)].filter(Boolean).map(esc).join(' · ')}</div></td>
+      <td></td>${fin?`<td class="num money">${money(fees(c))}</td>`:''}<td>${chips(svcOf([c]))}</td></tr>`;
+  const gRows=groups.map(x=>{const u=T.byGroup[x.g.id], open=listOpen.has(x.g.id)||!!q;
+    return `<tr><td><span class="linkname" onclick="listOpen.has('${x.g.id}')?listOpen.delete('${x.g.id}'):listOpen.add('${x.g.id}');renderList()">${open?'▾':'▸'}</span></td>
+      ${tierOn?`<td>${tierBadge(u&&u.tier)}</td>`:''}<td class="code">${esc(x.g.group_code)}</td>
+      <td><span class="linkname" style="font-weight:700" onclick="openGroup('${x.g.id}')">${esc(x.g.name)}</span>${x.all.length?'':` <span class="hint">${t('group_empty_short')}</span>`}</td>
+      <td class="num">${x.all.length}</td>${fin?`<td class="num money">${money(x.all.reduce((s,c)=>s+fees(c),0))}</td>`:''}<td>${chips(svcOf(x.all))}</td></tr>
+      ${open?x.members.sort((a,b)=>fees(b)-fees(a)||(a.name||'').localeCompare(b.name||'')).map(memberRow).join(''):''}`;}).join('');
+  const sRows=singles.map(c=>`<tr><td></td>${tierOn?`<td>${clientTierCell(c)}</td>`:''}<td class="code">${c.client_code}</td>
+      <td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span><div class="sub2">${[c.industry,ctStr(c.client_types)].filter(Boolean).map(esc).join(' · ')}</div></td>
+      <td class="num">1</td>${fin?`<td class="num money">${money(fees(c))}</td>`:''}<td>${chips(svcOf([c]))}</td></tr>`).join('');
+  return `${edit?suggestPanel():''}
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:4px 16px 8px"><b>${t('groups_title',{n:groups.length})}</b>
+      ${edit?`<button class="primary" onclick="openGroupModal(null)">${t('new_group')}</button>`:''}</div>
+    ${groups.length?`<div style="overflow-x:auto"><table>${head}<tbody>${gRows}</tbody></table></div>`:`<div class="empty">${t('no_groups_yet')}</div>`}
+    <div style="border-top:1px solid var(--line);margin-top:10px;padding:12px 16px 6px"><span class="linkname" onclick="showSingles=!showSingles;renderList()">${showSingles||q?'▾':'▸'} ${t('singles_title')}</span> <span class="hint">(${singles.length}) — ${t('singles_hint')}</span></div>
+    ${(showSingles||q)&&singles.length?`<div style="overflow-x:auto"><table>${head}<tbody>${sRows}</tbody></table></div>`:''}`;
+}
+// add the ticked companies to a group (id), a new group ('__new'), or take them out of their group (null)
+async function addSelToGroup(gid){
+  const ids=[...listSel]; if(!ids.length||!can('editClients'))return;
+  if(gid==='__new'){
+    const name=(prompt(t('p_new_group_name'))||'').trim(); if(!name){renderList();return}
+    const r=await sb.from('client_groups').insert({group_code:nextGroupCode(),name}).select('id').single();
+    if(r.error){alert(t('a_could_not_save')+r.error.message);renderList();return}
+    gid=r.data.id;
+  } else if(gid&&!confirm(t('a_confirm_add_group',{n:ids.length,g:(groupById(gid)||{}).name||''}))){renderList();return}
+  if(!gid&&!confirm(t('a_confirm_ungroup',{n:ids.length})))return;
+  const {error}=await sb.from('clients').update({group_id:gid}).in('id',ids);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  listSel.clear(); if(gid)listOpen.add(gid); await refresh();
+}
+function nextGroupCode(){const n=(data.groups||[]).map(g=>(/^G-(\d+)$/i.exec(g.group_code||'')||[])[1]).filter(Boolean).map(Number);return 'G-'+String((n.length?Math.max(...n):0)+1).padStart(2,'0');}
+
+/* ---- suggested groups: companies whose names share a distinctive first word (confirm before creating) ---- */
+const GRP_STOP=new Set(['the','for','and','of','company','companies','co','group','egypt','egyptian','international','holding','holdings','misr','arab','arabian','new','national','general','al','el','investment','investments','development','trading','trade','industries','industrial','industry','real','estate','services','service','middle','east','global','united','modern','limited','ltd','sae','llc','branch','first','free','zone','fund','bank','capital','for','import','export','distribution','food','foods','engineering','consulting','consultants','technology','systems','solutions','media','marketing','financial','finance','insurance','medical','pharma','pharmaceutical','pharmaceuticals','hotel','hotels','tourism','tourist','contracting','construction','projects','factory','production','manufacturing','petroleum','energy','oil','gas','steel','cement','paper','plastic','textile','textiles','garments','chemicals','agricultural','agriculture','logistics','shipping','marine','transport','office','offices','representative','rep','partners','associates','city','corporate','egy','suez','canal','giza','delta','sinai','upper']);
+function nameWords(n){return (n||'').replace(/[^A-Za-z0-9؀-ۿ]+/g,' ').trim().split(/\s+/).filter(Boolean);}
+function nameKey(n){const k=nameWords(n).map(w=>w.toLowerCase()).find(w=>w.length>2&&!GRP_STOP.has(w)&&!/^\d+$/.test(w));return k||'';}
+function suggestName(members,key){
+  const pairs={};
+  members.forEach(c=>{const w=nameWords(c.name), i=w.findIndex(x=>x.toLowerCase()===key); if(i<0)return;
+    const p=w.slice(i,i+2).join(' '); pairs[p.toLowerCase()]=pairs[p.toLowerCase()]||{p,n:0}; pairs[p.toLowerCase()].n++;});
+  const best=Object.values(pairs).sort((a,b)=>b.n-a.n)[0], first=nameWords(members[0].name).find(x=>x.toLowerCase()===key)||key;
+  const base=best&&best.n>=Math.max(2,Math.ceil(members.length*0.6))&&best.p.split(' ').length===2&&!GRP_STOP.has(best.p.split(' ')[1].toLowerCase())?best.p:first;
+  return base.charAt(0).toUpperCase()+base.slice(1)+' '+t('group_word_suffix');
+}
+function suggestDismissed(){try{return new Set(JSON.parse(localStorage.getItem('grpSuggestDismissed')||'[]'));}catch(e){return new Set();}}
+function dismissSuggest(key){const s=suggestDismissed();s.add(key);try{localStorage.setItem('grpSuggestDismissed',JSON.stringify([...s]));}catch(e){}renderList();}
+function groupSuggestions(){
+  const off=suggestDismissed(), m={};
+  data.clients.filter(c=>!c.group_id).forEach(c=>{const k=nameKey(c.name); if(k)(m[k]=m[k]||[]).push(c);});
+  return Object.entries(m).filter(([k,v])=>v.length>1&&!off.has(k))
+    .map(([k,v])=>({key:k,members:v.sort((a,b)=>(a.name||'').localeCompare(b.name||'')),name:suggestName(v,k)}))
+    .sort((a,b)=>b.members.length-a.members.length||a.key.localeCompare(b.key));
+}
+let suggestCache=[], suggestAll=false;
+function suggestPanel(){
+  suggestCache=groupSuggestions(); if(!suggestCache.length)return '';
+  return `<div class="panel" style="margin:0 16px 14px;border:1px dashed var(--brand)"><h3><span class="linkname" onclick="showSuggest=!showSuggest;renderList()">${showSuggest?'▾':'▸'} ${t('suggest_title',{n:suggestCache.length})}</span> <span class="hint">${t('suggest_hint')}</span></h3>
+    ${showSuggest?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:0 16px 14px">${suggestCache.slice(0,suggestAll?suggestCache.length:9).map((s,i)=>`<div id="sg${i}" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px">
+      <input id="sgn${i}" value="${esc(s.name)}" style="width:100%;font-weight:700;margin-bottom:6px">
+      ${s.members.map(c=>`<label style="display:flex;gap:6px;align-items:flex-start;font-size:12.5px;padding:2px 0"><input type="checkbox" checked value="${c.id}"> <span><span class="code">${c.client_code}</span> ${esc(c.name)}</span></label>`).join('')}
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="primary" onclick="createSuggested(${i})">${t('create_group')}</button><button onclick="dismissSuggest('${esc(s.key)}')">${t('not_a_group')}</button></div></div>`).join('')}</div>
+    ${suggestCache.length>9?`<div style="padding:0 16px 12px"><a href="#" onclick="suggestAll=!suggestAll;renderList();return false">${suggestAll?t('show_fewer'):t('show_all_n',{n:suggestCache.length})}</a></div>`:''}`:''}</div>`;
+}
+async function createSuggested(i){
+  const box=$('sg'+i), name=($('sgn'+i).value||'').trim();
+  const ids=[...box.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value);
+  if(!name){alert(t('a_group_required'));return}
+  if(ids.length<2){alert(t('a_group_two'));return}
+  const r=await sb.from('client_groups').insert({group_code:nextGroupCode(),name}).select('id').single();
+  if(r.error){alert(t('a_could_not_save')+r.error.message);return}
+  const {error}=await sb.from('clients').update({group_id:r.data.id}).in('id',ids);
+  if(error){alert(t('a_could_not_save')+error.message);return}
+  listOpen.add(r.data.id); await refresh();
 }
 /* ---- former clients: out of the client list and totals; listed here, reactivatable ---- */
 let showFormer=false;
@@ -1387,6 +1561,7 @@ function renderClient(){
      <div style="display:flex;gap:14px;align-items:flex-start">${c.logo_file?`<img id="clientLogoImg" class="clogo" alt="${esc(c.name)}">`:''}<div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)}${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
        <div class="sub2">${[c.industry,ctStr(c.client_types),c.legal_structure,contract,c.year_end_month?t('ye_short',{d:yeLabel(c.year_end_month)}):''].filter(Boolean).map(esc).join(' · ')}</div>${distLine(c)}
        ${can('seePortfolioDash')?`<div class="sub2" style="margin-top:4px">${t('th_risk')}: ${riskBadge(c)} <span class="hint">${esc(clientRisk(c).factors.join(' · '))}</span></div>`:''}
+       ${can('seeTiers')&&!c.former?`<div class="sub2" style="margin-top:4px">${t('th_tier')}: ${clientTierCell(c)} <span class="hint">${t('tier_basis',{y:tierYearLabel()})}</span></div>`:''}
        ${c.notes?`<div class="sub2" style="margin-top:6px">${esc(c.notes)}</div>`:''}
        ${c.logo_file?`<div class="sub2" style="margin-top:6px"><a href="#" onclick="downloadLogo('${c.id}');return false">${t('download_logo')}</a></div>`:''}</div></div>
      <div style="display:flex;gap:8px">${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit_client')}</button>`:''}
@@ -1490,7 +1665,25 @@ function renderUsers(){
         <button class="primary" onclick="savePolicy()">${t('save_policy')}</button>
         <span class="hint" id="polMsg"></span>
       </div>
+    </div>
+    <div style="border-top:1px solid var(--line);padding:16px 18px">
+      <div style="font-weight:700;margin-bottom:4px">${t('grading_title')}</div>
+      <div class="hint" style="margin-bottom:8px">${t('grading_hint')}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_tier_a')}</label><input id="tierA" type="number" min="0" max="100" value="${tierPct().a}" style="width:130px"></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_tier_b')}</label><input id="tierB" type="number" min="0" max="100" value="${tierPct().b}" style="width:130px"></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label class="rlabel">${t('l_tier_year')}</label><select id="tierYear">${(()=>{const cur=tierYearSetting(), ys=[...new Set(allEngs().map(e=>+e.year).filter(Boolean))].sort((a,b)=>b-a);
+          return `<option value="current"${cur==='current'?' selected':''}>${t('tier_current_year',{y:new Date().getFullYear()})}</option><option value="all"${cur==='all'?' selected':''}>${t('all_years')}</option>`+ys.map(y=>`<option value="${y}"${String(cur)===String(y)?' selected':''}>${y}</option>`).join('');})()}</select></div>
+        <button class="primary" onclick="saveGrading()">${t('save_grading')}</button>
+        <span class="hint" id="gradeMsg"></span>
+      </div>
     </div>`;
+}
+async function saveGrading(){
+  const a=Math.min(100,Math.max(0,parseInt($('tierA').value)||0)), b=Math.min(100-a,Math.max(0,parseInt($('tierB').value)||0));
+  const {error}=await sb.from('app_settings').upsert([{key:'tier_a_pct',value:String(a)},{key:'tier_b_pct',value:String(b)},{key:'tier_year',value:$('tierYear').value}]);
+  if(error){$('gradeMsg').textContent=t('a_could_not_save')+error.message;return}
+  await refresh(); if($('gradeMsg'))$('gradeMsg').textContent='✓';
 }
 async function savePolicy(){
   const iv=parseInt($('polInterval').value)||36; const wn=parseInt($('polWarn').value); const w=isNaN(wn)?6:wn;
@@ -2453,6 +2646,7 @@ function renderGroup(){
    ${fin?`<div class="stats" style="margin-top:0">
      <div class="card"><div class="lbl">${t('group_revenue')}</div><div class="val">${money(total)}</div><div class="sub">${t('all_eng_egp')}</div></div>
      <div class="card"><div class="lbl">${t('clients')}</div><div class="val">${members.length}</div><div class="sub">${t('n_engagements',{n:engCount})}</div></div>
+     ${can('seeTiers')?(()=>{const u=tiers().byGroup[g.id];return `<div class="card"><div class="lbl">${t('th_tier')}</div><div class="val">${tierBadge(u&&u.tier)}</div><div class="sub">${t('tier_group_sub',{y:tierYearLabel(),f:money(u?u.fees:0)})}</div></div>`;})():''}
    </div>`:''}
    <div class="panel" style="margin-bottom:16px"><h3>${t('group_onboarding')}</h3><div style="padding:6px 20px 14px">
      ${tickRow('kyc',t('al_kyc'))}${tickRow('ac',t('al_ac'))}
@@ -2475,7 +2669,7 @@ async function groupTick(kind){
 function openGroupModal(id){
   const g=id?groupById(id):null;
   $('groupModalTitle').textContent=g?t('edit_group'):t('new_group_title');
-  $('gCode').value=g?g.group_code:''; $('gName').value=g?g.name:''; $('gNotes').value=g?g.notes||'':'';
+  $('gCode').value=g?g.group_code:nextGroupCode(); $('gName').value=g?g.name:''; $('gNotes').value=g?g.notes||'':'';
   $('ovGroup').dataset.id=id||''; $('ovGroup').classList.add('show');
 }
 async function saveGroup(){
