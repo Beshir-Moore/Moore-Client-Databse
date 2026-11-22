@@ -349,6 +349,13 @@
 </div></div>
 
 <!-- REMOVE FROM AUDIT LIST MODAL -->
+<!-- EXPORT AUDIT ALLOCATION (CSV) -->
+<div class="overlay" id="ovAllocExport"><div class="modal">
+  <h3 id="exTitle">Export audit allocation</h3>
+  <div class="body" id="exBody"></div>
+  <div class="foot"><button onclick="closeModal('ovAllocExport')" data-i18n="cancel">Cancel</button><button id="exGo" class="primary" onclick="doAllocExport()">Download CSV</button></div>
+</div></div>
+
 <div class="overlay" id="ovAuditRemove"><div class="modal">
   <h3 data-i18n="ar_title">Remove from the audit list</h3>
   <div class="body">
@@ -657,7 +664,15 @@ const I18N={
   dc_code_mismatch:"The code didn't match, so nothing was deleted.", dc_deleted:"{name} has been deleted.",
   dlog_title:"Deleted & merged clients", dlog_hint:"Every deletion and merge is logged here, with a copy of the removed record. Only the equity partners can see this.",
   dlog_when:"Date", dlog_what:"What happened", dlog_eng:"Engagements", dlog_by:"By",
-  dlog_merged:"Merged into {to}", dlog_deleted:"Deleted", dlog_empty:"Nothing has been deleted or merged yet."
+  dlog_merged:"Merged into {to}", dlog_deleted:"Deleted", dlog_empty:"Nothing has been deleted or merged yet.",
+  ex_btn:"⬇ Export CSV", ex_title:"Export audit allocation (CSV)",
+  ex_all:"All audit clients: allocated and not assigned", ex_allocated:"Allocated clients only", ex_un:"Not assigned clients only",
+  ex_view:"Only the list currently shown: {v}", ex_removed:"Also include clients removed from the audit list",
+  ex_hint:"Uses the page's current search box and “Show all clients” setting. The file opens in Excel, sorted by partner (not assigned last), then risk.",
+  ex_download:"Download CSV", ex_none:"There's nothing to export for this choice.",
+  csv_risk_basis:"Risk basis", csv_listed:"Listed", csv_fra:"FRA regulated", csv_pie:"PIE", csv_status:"Allocation status",
+  csv_audit_engs:"Audit engagements", csv_currency:"Contract currency", csv_removed_why:"Removed from audit list (reason)",
+  csv_st_alloc:"Allocated", csv_st_removed:"Removed from audit list"
  },
  ar:{
   app_title:"قاعدة بيانات العملاء", signin_sub:"Moore Egypt — سجّل الدخول للمتابعة",
@@ -876,7 +891,15 @@ const I18N={
   dc_code_mismatch:"الكود غير مطابق — لم يتم الحذف.", dc_deleted:"تم حذف {name}.",
   dlog_title:"العملاء المحذوفون والمدمجون", dlog_hint:"تُسجَّل هنا كل عملية حذف أو دمج مع نسخة من السجل المحذوف. يراه الشركاء المساهمون فقط.",
   dlog_when:"التاريخ", dlog_what:"الإجراء", dlog_eng:"التكليفات", dlog_by:"بواسطة",
-  dlog_merged:"دُمج في {to}", dlog_deleted:"حُذف", dlog_empty:"لم يُحذف أو يُدمج أي عميل بعد."
+  dlog_merged:"دُمج في {to}", dlog_deleted:"حُذف", dlog_empty:"لم يُحذف أو يُدمج أي عميل بعد.",
+  ex_btn:"⬇ تصدير CSV", ex_title:"تصدير توزيع المراجعة (CSV)",
+  ex_all:"جميع عملاء المراجعة: الموزّعون وغير المحددين", ex_allocated:"العملاء الموزّعون فقط", ex_un:"العملاء غير المحددين فقط",
+  ex_view:"القائمة المعروضة حاليًا فقط: {v}", ex_removed:"تضمين العملاء المُزالين من قائمة المراجعة أيضًا",
+  ex_hint:"يعتمد على مربع البحث وخيار «عرض كل العملاء» في الصفحة. يُفتح الملف في Excel مرتبًا حسب الشريك (غير المحددين في الآخر) ثم المخاطر.",
+  ex_download:"تنزيل CSV", ex_none:"لا يوجد ما يُصدَّر لهذا الاختيار.",
+  csv_risk_basis:"أساس المخاطر", csv_listed:"مُدرجة", csv_fra:"خاضعة للهيئة", csv_pie:"مصلحة عامة", csv_status:"حالة التوزيع",
+  csv_audit_engs:"تكليفات المراجعة", csv_currency:"عملة العقد", csv_removed_why:"مُزال من قائمة المراجعة (السبب)",
+  csv_st_alloc:"موزّع", csv_st_removed:"مُزال من قائمة المراجعة"
  }
 };
 function t(k,v){let s=(I18N[state.lang]&&I18N[state.lang][k])!=null?I18N[state.lang][k]:(I18N.en[k]!=null?I18N.en[k]:k);
@@ -2477,12 +2500,16 @@ function setAllocCell(risk,col){allocCell=(allocCell&&allocCell.risk===risk&&all
 function setAllocShowAll(on){allocShowAll=on;renderAllocation();}
 function allocToggle(id,on){on?allocSel.add(id):allocSel.delete(id);renderAllocation();}
 function allocSelectAll(ids,on){ids.split(',').filter(Boolean).forEach(id=>on?allocSel.add(id):allocSel.delete(id));renderAllocation();}
-function renderAllocation(){
-  const el=$('allocTable'); if(!el)return;
-  const signers=auditSigners(), sIds=new Set(signers.map(p=>p.id)), fin=can('seeFinancials');
-  const fc=filteredClients();
+// clients on the allocation page right now (same search box / "show all" rules as the page)
+function allocPoolNow(){
+  const signers=auditSigners(), sIds=new Set(signers.map(p=>p.id)), fc=filteredClients();
   const removedList=fc.filter(c=>c.audit_excluded).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   const pool=fc.filter(c=>!c.audit_excluded&&(allocShowAll||inAuditScope(c,sIds)));
+  return {signers,sIds,fc,removedList,pool};
+}
+function renderAllocation(){
+  const el=$('allocTable'); if(!el)return;
+  const {signers,sIds,fc,removedList,pool}=allocPoolNow(), fin=can('seeFinancials');
   const hiddenN=fc.length-pool.length-removedList.length;
   const nFormer=(data.formerClients||[]).length;
   const recon=`${t('alloc_recon',{t:fc.length,s:pool.length,r:removedList.length})}${hiddenN?t('alloc_recon_hidden',{h:hiddenN}):''}${nFormer?`<div class="hint" style="font-weight:400">${t('alloc_recon_former',{n:nFormer})}</div>`:''}`;
@@ -2532,6 +2559,7 @@ function renderAllocation(){
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
       <span class="hint">${t('alloc_hint')}</span>
       <span style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label class="rlabel" style="cursor:pointer"><input type="checkbox" ${allocShowAll?'checked':''} onchange="setAllocShowAll(this.checked)"> ${t('alloc_show_all')}</label>
+      <button onclick="openAllocExport()">${t('ex_btn')}</button>
       <button class="primary" onclick="openNotify()">${t('notify_btn')}</button></span></div>
     ${signers.length?'':`<div class="panel" style="padding:14px 18px;margin-bottom:14px;color:#b23b3b">${t('no_signers')}</div>`}
     <div class="panel" style="margin-bottom:16px"><h3>${t('risk_matrix')} <span class="hint">${t('risk_matrix_hint')}</span></h3><div style="overflow-x:auto">${matrix}</div>
@@ -2578,6 +2606,70 @@ async function setYearEnd(ids,m){
   const {error}=await sb.from('clients').update({year_end_month:+m||null}).in('id',ids);
   if(error){alert(t('a_could_not_save')+error.message);return}
   if(ids.length>1)allocSel.clear(); await refresh();
+}
+
+/* ---- export the audit allocation to CSV (opens in Excel) ---- */
+function allocViewLabel(){
+  if(!allocCell)return '';
+  const col=allocCell.col, p=!col?'':col==='__un'?t('not_assigned'):col==='__other'?t('alloc_other'):personName(col);
+  return [p,allocCell.risk?t('risk_'+allocCell.risk.toLowerCase()):''].filter(Boolean).join(' · ');
+}
+function allocExportSets(){
+  const {pool,removedList,sIds}=allocPoolNow();
+  const inView=c=>(!allocCell.risk||clientRisk(c).level===allocCell.risk)&&(!allocCell.col||allocCol(c,sIds)===allocCell.col);
+  return {sIds,removedList,all:pool,allocated:pool.filter(c=>c.partner_person),un:pool.filter(c=>!c.partner_person),view:allocCell?pool.filter(inView):null};
+}
+function openAllocExport(){
+  const s=allocExportSets();
+  const opt=(v,label,n,chk)=>`<label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="radio" name="exScope" value="${v}"${chk?' checked':''}> <span>${label} <span class="hint">(${n})</span></span></label>`;
+  $('exTitle').textContent=t('ex_title');
+  $('exBody').innerHTML=`<div style="display:grid;gap:8px">
+      ${opt('all',t('ex_all'),s.all.length,true)}${opt('allocated',t('ex_allocated'),s.allocated.length,false)}${opt('un',t('ex_un'),s.un.length,false)}
+      ${s.view?opt('view',t('ex_view',{v:esc(allocViewLabel())}),s.view.length,false):''}</div>
+    ${s.removedList.length?`<label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="exRemoved"> <span>${t('ex_removed')} <span class="hint">(${s.removedList.length})</span></span></label>`:''}
+    <div class="hint">${t('ex_hint')}</div>`;
+  $('exGo').textContent=t('ex_download');
+  $('ovAllocExport').classList.add('show');
+}
+// one CSV cell: quoted when needed; text starting with = + - @ is prefixed with ' so Excel never runs it as a formula
+function csvCell(v){
+  if(v==null)return '';
+  if(typeof v==='number')return String(v);
+  let s=String(v); if(/^[=+\-@\t\r]/.test(s))s="'"+s;
+  return /[",;\r\n]/.test(s)||/^\s|\s$/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+}
+function downloadCsv(name,rows){
+  const csv='﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n');   // BOM so Excel reads Arabic names correctly
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+function doAllocExport(){
+  const s=allocExportSets(), scope=(document.querySelector('input[name=exScope]:checked')||{}).value||'all';
+  const withRemoved=!!($('exRemoved')&&$('exRemoved').checked);
+  let list=((scope==='view'?s.view:s[scope])||s.all).slice(); if(withRemoved)list=list.concat(s.removedList);
+  if(!list.length){alert(t('ex_none'));return}
+  const fin=can('seeFinancials'), sOrder={}; auditSigners().forEach((p,i)=>sOrder[p.id]=i);
+  const risk={}; list.forEach(c=>risk[c.id]=clientRisk(c));
+  // order: each audit signer A–Z, other partners, not assigned, removed; then High → Low risk, then name
+  const grp=c=>c.audit_excluded?4e3:!c.partner_person?3e3:sOrder[c.partner_person]!=null?sOrder[c.partner_person]:2e3, rk={High:0,Medium:1,Low:2};
+  list.sort((a,b)=>grp(a)-grp(b)||(grp(a)===2e3?personName(a.partner_person).localeCompare(personName(b.partner_person)):0)
+    ||rk[risk[a.id].level]-rk[risk[b.id].level]||(a.name||'').localeCompare(b.name||''));
+  const has=(c,f)=>(c.client_types||[]).includes(f)?t('yes'):'';
+  const audits=c=>engForClient(c.id).filter(e=>deptOf(e.service_line)==='Audit & Assurance');
+  const head=[t('th_code'),t('th_client'),t('l_group'),t('l_industry'),t('th_risk'),t('csv_risk_basis'),t('csv_listed'),t('csv_fra'),t('csv_pie'),
+    t('th_ye'),t('th_signing_partner'),t('csv_status'),t('dist_incharge'),t('csv_audit_engs'),...(fin?[t('th_audit_rev')]:[]),t('csv_currency'),...(withRemoved?[t('csv_removed_why')]:[])];
+  const rows=list.map(c=>{const r=risk[c.id], g=groupOf(c), ae=audits(c);
+    const basis=r.override?`${t('risk_overridden',{a:t('risk_'+r.auto.toLowerCase())})}${c.risk_override_reason?': '+c.risk_override_reason:''}`:(r.factors.join('; ')||t('rf_none'));
+    const status=c.audit_excluded?t('csv_st_removed'):!c.partner_person?t('not_assigned'):s.sIds.has(c.partner_person)?t('csv_st_alloc'):t('alloc_other');
+    return [c.client_code,c.name,g?`${g.group_code} — ${g.name}`:'',c.industry||'',t('risk_'+r.level.toLowerCase()),basis,
+      has(c,'Listed'),has(c,'FRA Regulated'),has(c,'PIE'),yeLabel(c.year_end_month),personName(c.partner_person)||'',status,
+      personName(c.incharge_person)||'',ae.length,...(fin?[Math.round(ae.reduce((x,e)=>x+toEGP(e),0))]:[]),c.contract_currency||'EGP',
+      ...(withRemoved?[c.audit_excluded?[t('ar_r_'+(c.audit_excluded_reason||'other')),c.audit_excluded_note||''].filter(Boolean).join(': '):'']:[])];});
+  const d=new Date(), ymd=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const tag={all:'all',allocated:'allocated',un:'not-assigned',view:'filtered'}[scope]||'all';
+  downloadCsv(`audit-allocation-${tag}${withRemoved?'-incl-removed':''}-${ymd}.csv`,[head,...rows]);
+  closeModal('ovAllocExport');
 }
 
 /* ---- notify partners / directors of their audit allocation ---- */
