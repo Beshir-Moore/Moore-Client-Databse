@@ -411,8 +411,9 @@
       <div class="hint" style="margin-top:4px" data-i18n="dc_star_hint">★ = similar name</div>
       <div id="dcKeepInfo" style="margin-top:8px"></div>
     </div>
-    <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="radio" name="dcMode" value="delete" onchange="dcModeChange()" style="margin-top:3px">
+    <label id="dcDeleteOpt" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="radio" name="dcMode" value="delete" onchange="dcModeChange()" style="margin-top:3px">
       <span><b data-i18n="dc_delete">Delete it permanently</b><div class="hint" data-i18n="dc_delete_hint">The client and its engagements, letters, questionnaires and documents are deleted. This cannot be undone in the app; a copy of the record is kept in the deletion log.</div></span></label>
+    <div id="dcDelBlocked" class="hint hidden" style="margin-inline-start:26px;color:#b23b3b"></div>
     <div id="dcDeleteBox" class="hidden" style="margin-inline-start:26px">
       <div class="field"><label id="dcCodeLbl"></label><input id="dcConfirm" autocomplete="off" style="width:160px"></div>
     </div>
@@ -668,6 +669,7 @@ const I18N={
   dlog_title:"Deleted & merged clients", dlog_hint:"Every deletion and merge is logged here, with a copy of the removed record. Only the equity partners can see this.",
   dlog_when:"Date", dlog_what:"What happened", dlog_eng:"Engagements", dlog_by:"By",
   dlog_merged:"Merged into {to}", dlog_deleted:"Deleted", dlog_empty:"Nothing has been deleted or merged yet.",
+  dc_del_admin_block:"Office admins can only delete a client record with no engagements, questionnaires or documents. If it's a duplicate, merge it into the correct client above. To fix a misspelt name, use Edit client.",
   ex_btn:"⬇ Export CSV", ex_title:"Export audit allocation (CSV)",
   ex_all:"All audit clients: allocated and not assigned", ex_allocated:"Allocated clients only", ex_un:"Not assigned clients only",
   ex_view:"Only the list currently shown: {v}", ex_removed:"Also include clients removed from the audit list",
@@ -902,6 +904,7 @@ const I18N={
   dlog_title:"العملاء المحذوفون والمدمجون", dlog_hint:"تُسجَّل هنا كل عملية حذف أو دمج مع نسخة من السجل المحذوف. يراه الشركاء المساهمون فقط.",
   dlog_when:"التاريخ", dlog_what:"الإجراء", dlog_eng:"التكليفات", dlog_by:"بواسطة",
   dlog_merged:"دُمج في {to}", dlog_deleted:"حُذف", dlog_empty:"لم يُحذف أو يُدمج أي عميل بعد.",
+  dc_del_admin_block:"يمكن للإداريين حذف سجل العميل فقط إذا لم تكن له تكليفات أو استبيانات أو مستندات. إن كان مكررًا فادمجه في العميل الصحيح أعلاه، ولتصحيح الاسم استخدم «تعديل العميل».",
   ex_btn:"⬇ تصدير CSV", ex_title:"تصدير توزيع المراجعة (CSV)",
   ex_all:"جميع عملاء المراجعة: الموزّعون وغير المحددين", ex_allocated:"العملاء الموزّعون فقط", ex_un:"العملاء غير المحددين فقط",
   ex_view:"القائمة المعروضة حاليًا فقط: {v}", ex_removed:"تضمين العملاء المُزالين من قائمة المراجعة أيضًا",
@@ -943,7 +946,8 @@ const CAP={
   editClients:['partner','finance','office_admin','compliance','compliance_officer'], addClients:['partner','finance','office_admin','compliance','compliance_officer'],
   seeDashboard:['partner'],
   seeTiers:['partner','finance'],   // A/B/C fee tiers need every client's fees, so only roles that see all clients + financials
-  deleteClients:['partner'],        // delete a client / merge a duplicate (also enforced in the database)
+  deleteClients:['partner','office_admin'], // merge a duplicate / delete a client (database: office admins may delete only records with no engagements, questionnaires or documents)
+  seeDeleteLog:['partner'],         // Settings → Deleted & merged clients
 };
 // KYC questionnaire permissions are per person (Settings tick-boxes), not per role
 function kycPrep(){const p=state.profile||{};return !!(p.kyc_prepare||p.kyc_approve)}
@@ -1061,7 +1065,7 @@ async function loadAll(){
     const [rv,dc]=await Promise.all([sb.from('compliance_reviews').select('*').order('updated_at',{ascending:false}),sb.from('compliance_documents').select('*').order('uploaded_at')]);
     data.reviews=rv.data||[]; data.docs=dc.data||[];
   } else {data.reviews=[]; data.docs=[];}
-  if(can('deleteClients')){const dl=await sb.from('deleted_clients').select('id,client_code,name,action,merged_into_code,merged_into_name,engagements,deleted_by,deleted_at').order('deleted_at',{ascending:false}).limit(200); data.deletedLog=dl.data||[];}
+  if(can('seeDeleteLog')){const dl=await sb.from('deleted_clients').select('id,client_code,name,action,merged_into_code,merged_into_name,engagements,deleted_by,deleted_at').order('deleted_at',{ascending:false}).limit(200); data.deletedLog=dl.data||[];}
   else data.deletedLog=[];
 }
 
@@ -1655,6 +1659,11 @@ function openDelClient(id){
   document.querySelector('input[name=dcMode][value=merge]').checked=true;
   $('dcSearch').value=''; $('dcConfirm').value=''; $('dcKeep').innerHTML='';
   $('dcCodeLbl').textContent=t('dc_type_code',{code:c.client_code});
+  // office admins may only delete an empty record (no engagements, questionnaires or documents); the database enforces this too
+  const n=dcCounts(c.id), blocked=state.role!=='partner'&&n.eng+n.reviews+n.docs>0;
+  document.querySelector('input[name=dcMode][value=delete]').disabled=blocked;
+  $('dcDeleteOpt').style.opacity=blocked?'.5':''; $('dcDeleteOpt').style.cursor=blocked?'not-allowed':'pointer';
+  $('dcDelBlocked').textContent=blocked?t('dc_del_admin_block'):''; $('dcDelBlocked').classList.toggle('hidden',!blocked);
   dcFill(); dcModeChange();
   $('ovDelClient').classList.add('show');
 }
@@ -1721,7 +1730,7 @@ async function doDelClient(){
   }
 }
 function deletedLogPanel(){
-  const l=data.deletedLog||[]; if(!can('deleteClients'))return '';
+  const l=data.deletedLog||[]; if(!can('seeDeleteLog'))return '';
   return `<div style="border-top:1px solid var(--line);padding:16px 18px">
     <div style="font-weight:700;margin-bottom:4px">${t('dlog_title')}</div><div class="hint" style="margin-bottom:8px">${t('dlog_hint')}</div>
     ${l.length?`<div style="overflow-x:auto;max-height:340px;overflow-y:auto"><table><thead><tr><th>${t('dlog_when')}</th><th>${t('th_client')}</th><th>${t('dlog_what')}</th><th>${t('dlog_eng')}</th><th>${t('dlog_by')}</th></tr></thead><tbody>${l.map(r=>`<tr>
