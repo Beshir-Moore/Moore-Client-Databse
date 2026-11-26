@@ -73,6 +73,8 @@
   .rmx th.rhead:hover{color:var(--brand)}
   .rmx .rtot td{border-top:2px solid var(--line)}
   .rflags{font-size:11px;color:#b23b3b;font-weight:700}.rflags span{margin:0 3px}
+  .rqpill{display:inline-block;min-width:18px;padding:0 6px;border-radius:10px;background:#d33;color:#fff;font-size:11px;font-weight:700;margin-inline-start:6px;text-align:center}
+  .rqcard{border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
   .flag{display:inline-block;padding:1px 7px;margin-inline-end:4px;border:1px solid var(--line);border-radius:10px;font-size:11px;color:var(--muted);cursor:pointer}
   .flag.on{background:#b23b3b;border-color:#b23b3b;color:#fff;font-weight:700}
   .sgn{padding:3px 7px;margin-inline-end:3px;font-size:11px;font-weight:700;min-width:34px}
@@ -196,6 +198,7 @@
       <button class="primary" id="btnAddClient" onclick="openClientModal(null)" data-i18n="add_client">+ Add client</button>
       <button id="btnAddGroup" onclick="openGroupModal(null)" data-i18n="new_group">+ New group</button>
       <button id="btnRates" onclick="openRates()" data-i18n="exchange_rates">💱 Exchange rates</button>
+      <button id="btnRequests" class="hidden" onclick="openRequests()"></button>
       <button id="btnUsers" onclick="setTab('users')" class="ghost" data-i18n="settings">⚙ Settings</button>
       <div class="spacer"></div>
       <select id="svcDept" onchange="onSvcFilter()" title="Filter clients by the services they use"><option value="">All services</option></select>
@@ -215,6 +218,7 @@
       <button class="tab" data-tab="users" onclick="setTab('users')" id="tabUsers" data-i18n="settings">⚙ Settings</button>
     </div>
     <div id="mainView">
+      <div id="reqBanner" class="hidden"></div>
       <div id="tab-clients" class="hidden"><div class="panel"><h3 id="clientsTitle">Clients — ranked by revenue (EGP)</h3><div id="clientsTable"></div></div></div>
       <div id="tab-engagements" class="hidden"><div class="panel"><h3 data-i18n="tab_eng">All engagements</h3><div id="engTable"></div></div></div>
       <div id="tab-list"><div class="panel"><h3 data-i18n="tab_list">Client list</h3><div id="listTable"></div></div></div>
@@ -413,12 +417,21 @@
     </div>
     <label id="dcDeleteOpt" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="radio" name="dcMode" value="delete" onchange="dcModeChange()" style="margin-top:3px">
       <span><b data-i18n="dc_delete">Delete it permanently</b><div class="hint" data-i18n="dc_delete_hint">The client and its engagements, letters, questionnaires and documents are deleted. This cannot be undone in the app; a copy of the record is kept in the deletion log.</div></span></label>
-    <div id="dcDelBlocked" class="hint hidden" style="margin-inline-start:26px;color:#b23b3b"></div>
+    <div id="dcReasonBox" class="field hidden"><label data-i18n="l_rq_reason">Reason for the request *</label>
+      <textarea id="dcReason" rows="2" data-i18n-ph="rq_reason_ph" placeholder="e.g. Duplicate of #123, or name misspelt"></textarea></div>
+    <div id="dcReqNote" class="hint hidden"></div>
     <div id="dcDeleteBox" class="hidden" style="margin-inline-start:26px">
       <div class="field"><label id="dcCodeLbl"></label><input id="dcConfirm" autocomplete="off" style="width:160px"></div>
     </div>
   </div>
   <div class="foot"><button onclick="closeModal('ovDelClient')" data-i18n="cancel">Cancel</button><button id="btnDelClient" class="primary" onclick="doDelClient()">Merge</button></div>
+</div></div>
+
+<!-- CLIENT REMOVAL REQUESTS (office admins request, equity partners approve) -->
+<div class="overlay" id="ovRequests"><div class="modal" style="max-width:720px">
+  <h3 id="rqTitle">Client removal requests</h3>
+  <div class="body" id="rqBody"></div>
+  <div class="foot"><button onclick="closeModal('ovRequests')" data-i18n="close">Close</button></div>
 </div></div>
 
 <!-- GROUP MEMBERS MODAL -->
@@ -669,7 +682,28 @@ const I18N={
   dlog_title:"Deleted & merged clients", dlog_hint:"Every deletion and merge is logged here, with a copy of the removed record. Only the equity partners can see this.",
   dlog_when:"Date", dlog_what:"What happened", dlog_eng:"Engagements", dlog_by:"By",
   dlog_merged:"Merged into {to}", dlog_deleted:"Deleted", dlog_empty:"Nothing has been deleted or merged yet.",
-  dc_del_admin_block:"Office admins can only delete a client record with no engagements, questionnaires or documents. If it's a duplicate, merge it into the correct client above. To fix a misspelt name, use Edit client.",
+  close:"Close",
+  dc_title_req:"Request to delete or merge client",
+  dc_req_intro:"Your request goes to the equity partners. Nothing is deleted or merged until one of them approves it.",
+  l_rq_reason:"Reason for the request *", rq_reason_ph:"e.g. Duplicate of #123, or name misspelt",
+  rq_send:"Send for approval", rq_reason_needed:"Please give a reason for the request.",
+  rq_already:"A removal request for this client is already waiting for approval ({e}, {d}).",
+  rq_sent_email_q:"Request sent. The equity partners will see it under 🗑 Approvals in the app.\n\nDo you also want to email them about it? (This opens a ready-made email in your mail program.)",
+  rq_mail_subj:"Client removal request: {c}",
+  rq_mail_body:"Hello,\n\nI have sent a client removal request in the Moore Client Database. It needs approval from one of the equity partners.\n\nClient: {c}\nRequest: {what}\nReason: {reason}\n\nTo approve or reject it, open the app and click 🗑 Approvals:\n{url}\n\nThank you,\n{me}",
+  rq_approvals:"🗑 Approvals", rq_my_requests:"🗑 Removal requests", rq_title:"Client removal requests",
+  rq_intro_partner:"Office admins ask here for duplicate or wrongly entered clients to be deleted or merged. Any one of the equity partners can approve or reject a request. Approving carries it out straight away, and it is logged under Settings → Deleted & merged clients.",
+  rq_intro_admin:"Requests you send are carried out only after one of the equity partners approves them. You can withdraw a request while it is waiting.",
+  rq_pending_h:"Waiting for approval", rq_recent_h:"Recent decisions", rq_none:"No requests are waiting.",
+  rq_banner:"{n} client removal request(s) waiting for approval", rq_review:"Review",
+  rq_delete:"Delete permanently", rq_merge:"Merge into {k}", rq_by:"Requested by {e} on {d}", rq_reason:"Reason",
+  rq_approve:"Approve", rq_reject:"Reject", rq_withdraw:"Withdraw", rq_email_btn:"✉ Email partners",
+  rq_st_approved:"Approved", rq_st_rejected:"Rejected", rq_st_cancelled:"Cancelled", rq_decided:"decided by {e}",
+  rq_th_req:"Request", rq_th_outcome:"Outcome",
+  rq_confirm_delete:"Approve and permanently delete {c}?\n\n{s}\n\nThis can't be undone in the app.",
+  rq_reject_prompt:"Reject this request? You can add a note for the office admin (optional):",
+  rq_confirm_withdraw:"Withdraw this request?", rq_client_banner:"Removal request waiting for approval: {what}",
+  rq_gone:"This client is no longer in the list.", dlog_req_by:"requested by {e}",
   ex_btn:"⬇ Export CSV", ex_title:"Export audit allocation (CSV)",
   ex_all:"All audit clients: allocated and not assigned", ex_allocated:"Allocated clients only", ex_un:"Not assigned clients only",
   ex_view:"Only the list currently shown: {v}", ex_removed:"Also include clients removed from the audit list",
@@ -904,7 +938,28 @@ const I18N={
   dlog_title:"العملاء المحذوفون والمدمجون", dlog_hint:"تُسجَّل هنا كل عملية حذف أو دمج مع نسخة من السجل المحذوف. يراه الشركاء المساهمون فقط.",
   dlog_when:"التاريخ", dlog_what:"الإجراء", dlog_eng:"التكليفات", dlog_by:"بواسطة",
   dlog_merged:"دُمج في {to}", dlog_deleted:"حُذف", dlog_empty:"لم يُحذف أو يُدمج أي عميل بعد.",
-  dc_del_admin_block:"يمكن للإداريين حذف سجل العميل فقط إذا لم تكن له تكليفات أو استبيانات أو مستندات. إن كان مكررًا فادمجه في العميل الصحيح أعلاه، ولتصحيح الاسم استخدم «تعديل العميل».",
+  close:"إغلاق",
+  dc_title_req:"طلب حذف العميل أو دمجه",
+  dc_req_intro:"يُرسَل طلبك إلى الشركاء المساهمين، ولا يُحذف أو يُدمج أي شيء حتى يوافق عليه أحدهم.",
+  l_rq_reason:"سبب الطلب *", rq_reason_ph:"مثال: مكرر للعميل #123، أو خطأ في كتابة الاسم",
+  rq_send:"إرسال للموافقة", rq_reason_needed:"يرجى ذكر سبب الطلب.",
+  rq_already:"يوجد طلب حذف لهذا العميل بانتظار الموافقة بالفعل ({e}، {d}).",
+  rq_sent_email_q:"تم إرسال الطلب. سيظهر للشركاء المساهمين في التطبيق تحت 🗑 الموافقات.\n\nهل تريد أيضًا إرسال بريد إلكتروني لهم؟ (سيفتح رسالة جاهزة في برنامج البريد لديك.)",
+  rq_mail_subj:"طلب حذف عميل: {c}",
+  rq_mail_body:"مرحبًا،\n\nأرسلت طلب حذف عميل في قاعدة بيانات عملاء مور، ويحتاج إلى موافقة أحد الشركاء المساهمين.\n\nالعميل: {c}\nالطلب: {what}\nالسبب: {reason}\n\nللموافقة أو الرفض افتح التطبيق واضغط 🗑 الموافقات:\n{url}\n\nشكرًا،\n{me}",
+  rq_approvals:"🗑 الموافقات", rq_my_requests:"🗑 طلبات الحذف", rq_title:"طلبات حذف العملاء",
+  rq_intro_partner:"يطلب الإداريون هنا حذف العملاء المكررين أو المُدخلين خطأً أو دمجهم. يمكن لأي من الشركاء المساهمين الموافقة على الطلب أو رفضه. تُنفَّذ الموافقة فورًا وتُسجَّل في الإعدادات ← العملاء المحذوفون والمدمجون.",
+  rq_intro_admin:"لا تُنفَّذ طلباتك إلا بعد موافقة أحد الشركاء المساهمين. يمكنك سحب الطلب طالما أنه بانتظار الموافقة.",
+  rq_pending_h:"بانتظار الموافقة", rq_recent_h:"آخر القرارات", rq_none:"لا توجد طلبات بانتظار الموافقة.",
+  rq_banner:"{n} طلب حذف عميل بانتظار الموافقة", rq_review:"مراجعة",
+  rq_delete:"حذف نهائي", rq_merge:"دمج في {k}", rq_by:"طلبه {e} بتاريخ {d}", rq_reason:"السبب",
+  rq_approve:"موافقة", rq_reject:"رفض", rq_withdraw:"سحب الطلب", rq_email_btn:"✉ مراسلة الشركاء",
+  rq_st_approved:"تمت الموافقة", rq_st_rejected:"مرفوض", rq_st_cancelled:"ملغى", rq_decided:"القرار: {e}",
+  rq_th_req:"الطلب", rq_th_outcome:"النتيجة",
+  rq_confirm_delete:"الموافقة على الحذف النهائي لـ {c}؟\n\n{s}\n\nلا يمكن التراجع عن ذلك من التطبيق.",
+  rq_reject_prompt:"رفض هذا الطلب؟ يمكنك إضافة ملاحظة للإداري (اختياري):",
+  rq_confirm_withdraw:"سحب هذا الطلب؟", rq_client_banner:"طلب حذف بانتظار الموافقة: {what}",
+  rq_gone:"هذا العميل لم يعد في القائمة.", dlog_req_by:"بطلب من {e}",
   ex_btn:"⬇ تصدير CSV", ex_title:"تصدير توزيع المراجعة (CSV)",
   ex_all:"جميع عملاء المراجعة: الموزّعون وغير المحددين", ex_allocated:"العملاء الموزّعون فقط", ex_un:"العملاء غير المحددين فقط",
   ex_view:"القائمة المعروضة حاليًا فقط: {v}", ex_removed:"تضمين العملاء المُزالين من قائمة المراجعة أيضًا",
@@ -946,7 +1001,9 @@ const CAP={
   editClients:['partner','finance','office_admin','compliance','compliance_officer'], addClients:['partner','finance','office_admin','compliance','compliance_officer'],
   seeDashboard:['partner'],
   seeTiers:['partner','finance'],   // A/B/C fee tiers need every client's fees, so only roles that see all clients + financials
-  deleteClients:['partner','office_admin'], // merge a duplicate / delete a client (database: office admins may delete only records with no engagements, questionnaires or documents)
+  deleteClients:['partner'],        // delete / merge a client straight away (also enforced in the database)
+  requestRemoval:['office_admin'],  // ask for a delete / merge; any equity partner approves it (🗑 Approvals)
+  seeRemovalRequests:['partner','office_admin'],
   seeDeleteLog:['partner'],         // Settings → Deleted & merged clients
 };
 // KYC questionnaire permissions are per person (Settings tick-boxes), not per role
@@ -1065,7 +1122,9 @@ async function loadAll(){
     const [rv,dc]=await Promise.all([sb.from('compliance_reviews').select('*').order('updated_at',{ascending:false}),sb.from('compliance_documents').select('*').order('uploaded_at')]);
     data.reviews=rv.data||[]; data.docs=dc.data||[];
   } else {data.reviews=[]; data.docs=[];}
-  if(can('seeDeleteLog')){const dl=await sb.from('deleted_clients').select('id,client_code,name,action,merged_into_code,merged_into_name,engagements,deleted_by,deleted_at').order('deleted_at',{ascending:false}).limit(200); data.deletedLog=dl.data||[];}
+  if(can('seeRemovalRequests')){const rq=await sb.from('client_delete_requests').select('*').order('requested_at',{ascending:false}).limit(300); data.removalReqs=rq.data||[];}
+  else data.removalReqs=[];
+  if(can('seeDeleteLog')){const dl=await sb.from('deleted_clients').select('id,client_code,name,action,merged_into_code,merged_into_name,engagements,deleted_by,deleted_at,requested_by').order('deleted_at',{ascending:false}).limit(200); data.deletedLog=dl.data||[];}
   else data.deletedLog=[];
 }
 
@@ -1366,7 +1425,7 @@ function statusDot(st){const col={red:'#d64352',yellow:'#e0a81e',green:'#16b685'
 function statusCell(c){const st=clientStatus(c);return `<div class="statuscell">${statusDot(st)}<span class="rlabel">${esc(st.reasons[0]||'')}</span></div>`}
 
 /* ============ RENDER ============ */
-function renderAll(){ if(can('seePortfolioDash')){renderStats();renderClients();} if(can('seePortfolioDash')||can('assignClients'))renderPeople(); renderEng(); renderList(); renderAlerts(); if(can('viewCompliance'))renderCompliance(); if(can('seeDashboard'))renderServices(); if(can('assignClients'))renderAllocation(); if(can('manageUsers'))renderUsers(); }
+function renderAll(){ renderReqBadge(); if(can('seePortfolioDash')){renderStats();renderClients();} if(can('seePortfolioDash')||can('assignClients'))renderPeople(); renderEng(); renderList(); renderAlerts(); if(can('viewCompliance'))renderCompliance(); if(can('seeDashboard'))renderServices(); if(can('assignClients'))renderAllocation(); if(can('manageUsers'))renderUsers(); }
 
 function renderStats(){
   const el=$('stats'); const clients=data.clients.length;
@@ -1616,7 +1675,7 @@ function formerPanel(){
       <td class="code">${c.client_code}</td><td><span class="linkname" onclick="openClient('${c.id}')">${esc(c.name)}</span> <span class="badge">${t('former_badge')}</span>${c.audit_excluded_note?`<div class="sub2">${esc(c.audit_excluded_note)}</div>`:''}</td>
       <td>${esc(personName(c.partner_person)||'—')}</td>
       <td class="hint">${c.former_at?fmtDate(String(c.former_at).slice(0,10)):''}${c.former_by?`<div>${esc(c.former_by)}</div>`:''}</td>
-      <td class="rowact">${edit?`<button onclick="setFormer('${c.id}',false)">${t('reactivate')}</button>`:''}${can('deleteClients')?` <button class="del" onclick="openDelClient('${c.id}')">${t('dc_btn')}</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${t('no_clients')}</div>`):''}`;
+      <td class="rowact">${edit?`<button onclick="setFormer('${c.id}',false)">${t('reactivate')}</button>`:''}${canRemove()?` <button class="del" onclick="openDelClient('${c.id}')">${t('dc_btn')}</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${t('no_clients')}</div>`):''}`;
 }
 // fields to write when a client becomes former / current again (reactivating also undoes a "No longer a client" audit removal)
 function formerFields(c,on){
@@ -1651,26 +1710,26 @@ function dcSummary(c){
 }
 function dcMode(){const r=document.querySelector('input[name=dcMode]:checked');return r?r.value:'merge'}
 function openDelClient(id){
-  const c=clientById(id); if(!c||!can('deleteClients'))return;
+  const c=clientById(id); if(!c||!canRemove())return;
   dcId=id;
-  $('dcTitle').textContent=t('dc_title');
+  const direct=can('deleteClients'), pend=pendingReqFor(c.id);   // office admins send a request; an equity partner approves it
+  $('dcTitle').textContent=t(direct?'dc_title':'dc_title_req');
   $('dcInfo').innerHTML=`<div><b><span class="code">#${c.client_code}</span> ${esc(c.name)}</b>${c.former?` <span class="badge">${t('former_badge')}</span>`:''}</div>
     <div class="hint">${esc([personName(c.partner_person),c.contract_currency||'EGP',dcSummary(c)].filter(Boolean).join(' · '))}</div>`;
   document.querySelector('input[name=dcMode][value=merge]').checked=true;
-  $('dcSearch').value=''; $('dcConfirm').value=''; $('dcKeep').innerHTML='';
+  $('dcSearch').value=''; $('dcConfirm').value=''; $('dcKeep').innerHTML=''; $('dcReason').value='';
   $('dcCodeLbl').textContent=t('dc_type_code',{code:c.client_code});
-  // office admins may only delete an empty record (no engagements, questionnaires or documents); the database enforces this too
-  const n=dcCounts(c.id), blocked=state.role!=='partner'&&n.eng+n.reviews+n.docs>0;
-  document.querySelector('input[name=dcMode][value=delete]').disabled=blocked;
-  $('dcDeleteOpt').style.opacity=blocked?'.5':''; $('dcDeleteOpt').style.cursor=blocked?'not-allowed':'pointer';
-  $('dcDelBlocked').textContent=blocked?t('dc_del_admin_block'):''; $('dcDelBlocked').classList.toggle('hidden',!blocked);
+  $('dcReasonBox').classList.toggle('hidden',direct);
+  const note=pend?t('rq_already',{e:pend.requested_by_email||'',d:fmtDate(String(pend.requested_at).slice(0,10))}):direct?'':t('dc_req_intro');
+  $('dcReqNote').textContent=note; $('dcReqNote').classList.toggle('hidden',!note); $('dcReqNote').style.color=pend?'#b23b3b':'';
+  $('btnDelClient').disabled=!!pend&&!direct;
   dcFill(); dcModeChange();
   $('ovDelClient').classList.add('show');
 }
 function dcModeChange(){
-  const m=dcMode(), b=$('btnDelClient');
-  $('dcMergeBox').classList.toggle('hidden',m!=='merge'); $('dcDeleteBox').classList.toggle('hidden',m!=='delete');
-  b.textContent=t(m==='merge'?'dc_merge_btn':'dc_delete_btn');
+  const m=dcMode(), b=$('btnDelClient'), direct=can('deleteClients');
+  $('dcMergeBox').classList.toggle('hidden',m!=='merge'); $('dcDeleteBox').classList.toggle('hidden',m!=='delete'||!direct);
+  b.textContent=direct?t(m==='merge'?'dc_merge_btn':'dc_delete_btn'):t('rq_send');
   b.style.background=b.style.borderColor=m==='delete'?'#b23b3b':'';
   dcKeepInfo();
 }
@@ -1704,8 +1763,18 @@ function dcKeepInfo(){
     ${warn.map(w=>`<div style="color:#b23b3b;font-size:12px;margin-top:4px">⚠ ${esc(w)}</div>`).join('')}</div>`;
 }
 async function doDelClient(){
-  const c=clientById(dcId); if(!c||!can('deleteClients'))return;
+  const c=clientById(dcId); if(!c||!canRemove())return;
   const btn=$('btnDelClient');
+  if(!can('deleteClients')){   // office admin: send the request to the equity partners
+    const act=dcMode(), k=act==='merge'&&$('dcKeep').value?clientById($('dcKeep').value):null, reason=$('dcReason').value.trim();
+    if(act==='merge'&&!k){alert(t('dc_pick_keep'));return}
+    if(!reason){alert(t('rq_reason_needed'));$('dcReason').focus();return}
+    btn.disabled=true; const {error}=await sb.rpc('request_client_removal',{target:c.id,act,keep:k?k.id:null,note:reason}); btn.disabled=false;
+    if(error){alert(t('a_could_not_save')+error.message);return}
+    closeModal('ovDelClient'); closeModal('ovClient'); await refresh();
+    if(confirm(t('rq_sent_email_q')))await emailApprovers({client_code:c.client_code,client_name:c.name,action:act,keep_code:k&&k.client_code,keep_name:k&&k.name,reason});
+    return;
+  }
   if(dcMode()==='merge'){
     const k=$('dcKeep').value?clientById($('dcKeep').value):null;
     if(!k){alert(t('dc_pick_keep'));return}
@@ -1737,8 +1806,96 @@ function deletedLogPanel(){
       <td class="hint">${fmtDate(String(r.deleted_at).slice(0,10))}</td>
       <td><span class="code">#${r.client_code}</span> ${esc(r.name)}</td>
       <td>${r.action==='merged'?esc(t('dlog_merged',{to:`#${r.merged_into_code} ${r.merged_into_name||''}`})):`<span style="color:#b23b3b">${t('dlog_deleted')}</span>`}</td>
-      <td class="num">${r.engagements||0}</td><td class="hint">${esc(r.deleted_by||'')}</td></tr>`).join('')}</tbody></table></div>`:`<div class="hint">${t('dlog_empty')}</div>`}
+      <td class="num">${r.engagements||0}</td><td class="hint">${esc(r.deleted_by||'')}${r.requested_by?`<div>${esc(t('dlog_req_by',{e:r.requested_by}))}</div>`:''}</td></tr>`).join('')}</tbody></table></div>`:`<div class="hint">${t('dlog_empty')}</div>`}
   </div>`;
+}
+/* ---- removal requests: office admins ask, any equity partner approves (rules enforced in the database) ---- */
+function canRemove(){return can('deleteClients')||can('requestRemoval')}
+function pendingReqs(){return (data.removalReqs||[]).filter(r=>r.status==='pending')}
+function pendingReqFor(cid){return pendingReqs().find(r=>r.client_id===cid)||null}
+function reqWhat(r){return r.action==='merge'?t('rq_merge',{k:`#${r.keep_code} ${r.keep_name||''}`}):t('rq_delete')}
+function reqWho(r){return t('rq_by',{e:r.requested_by_email||'—',d:fmtDate(String(r.requested_at).slice(0,10))})}
+function reqButtons(r){
+  if(can('deleteClients'))return `<button class="primary" onclick="decideReq('${r.id}',true)"${r.action==='delete'?' style="background:#b23b3b;border-color:#b23b3b"':''}>${t('rq_approve')}</button><button onclick="decideReq('${r.id}',false)">${t('rq_reject')}</button>`;
+  return r.requested_by===state.user.id?`<button onclick="emailReq('${r.id}')">${t('rq_email_btn')}</button><button onclick="withdrawReq('${r.id}')">${t('rq_withdraw')}</button>`:'';
+}
+function renderReqBadge(){
+  const b=$('btnRequests'); if(!b)return;
+  const show=can('seeRemovalRequests'), partner=can('deleteClients'), n=pendingReqs().length;
+  b.classList.toggle('hidden',!show);
+  b.innerHTML=show?`${esc(t(partner?'rq_approvals':'rq_my_requests'))}${n?`<span class="rqpill">${n}</span>`:''}`:'';
+  const bn=$('reqBanner'), on=show&&partner&&n>0;
+  bn.classList.toggle('hidden',!on);
+  bn.innerHTML=on?`<div class="panel" style="margin-bottom:12px;padding:10px 16px;border-inline-start:4px solid #d33;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>🗑 <b>${esc(t('rq_banner',{n}))}</b></span><button class="primary" onclick="openRequests()">${t('rq_review')}</button></div>`:'';
+  if($('ovRequests').classList.contains('show'))renderRequests();
+}
+function reqClientBanner(c){
+  const r=pendingReqFor(c.id); if(!r)return '';
+  return `<div class="panel" style="margin-bottom:12px;padding:10px 16px;border-inline-start:4px solid #d33;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+    <span>🗑 <b>${esc(t('rq_client_banner',{what:reqWhat(r)}))}</b><div class="hint">${esc(t('rq_reason'))}: ${esc(r.reason||'—')} · ${esc(reqWho(r))}</div></span>
+    <span style="display:flex;gap:6px">${reqButtons(r)}</span></div>`;
+}
+function openRequests(){renderRequests();$('ovRequests').classList.add('show');}
+function renderRequests(){
+  const partner=can('deleteClients'), all=data.removalReqs||[], pend=all.filter(r=>r.status==='pending'), done=all.filter(r=>r.status!=='pending').slice(0,40);
+  const st={approved:['green','rq_st_approved'],rejected:['red','rq_st_rejected'],cancelled:['','rq_st_cancelled']};
+  const card=r=>{const c=clientById(r.client_id);
+    return `<div class="rqcard"><div style="flex:1;min-width:240px">
+      <div><b>${c?`<span class="linkname" onclick="closeModal('ovRequests');openClient('${c.id}')"><span class="code">#${r.client_code}</span> ${esc(c.name)}</span>`:`<span class="code">#${r.client_code}</span> ${esc(r.client_name||'')}`}</b>
+        — <span style="${r.action==='delete'?'color:#b23b3b;font-weight:600':''}">${esc(reqWhat(r))}</span></div>
+      <div class="hint">${c?esc(dcSummary(c)):t('rq_gone')}</div>
+      <div style="margin-top:4px">${esc(t('rq_reason'))}: ${esc(r.reason||'—')}</div>
+      <div class="hint">${esc(reqWho(r))}</div></div>
+      <div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap">${reqButtons(r)}</div></div>`;};
+  const row=r=>`<tr><td class="hint">${fmtDate(String(r.decided_at||r.requested_at).slice(0,10))}</td>
+    <td><span class="code">#${r.client_code}</span> ${esc(r.client_name||'')}</td><td>${esc(reqWhat(r))}<div class="hint">${esc(r.reason||'')}</div></td>
+    <td><span class="badge ${st[r.status][0]}">${t(st[r.status][1])}</span>${r.decision_note?`<div class="hint">${esc(r.decision_note)}</div>`:''}</td>
+    <td class="hint">${esc(r.requested_by_email||'')}${r.decided_by_email?`<div>${esc(t('rq_decided',{e:r.decided_by_email}))}</div>`:''}</td></tr>`;
+  $('rqTitle').textContent=t('rq_title');
+  $('rqBody').innerHTML=`<div class="hint" style="margin-bottom:12px">${t(partner?'rq_intro_partner':'rq_intro_admin')}</div>
+    <div style="font-weight:700;margin-bottom:8px">${t('rq_pending_h')} (${pend.length})</div>
+    ${pend.length?`<div style="display:flex;flex-direction:column;gap:8px">${pend.map(card).join('')}</div>`:`<div class="hint">${t('rq_none')}</div>`}
+    ${done.length?`<div style="font-weight:700;margin:18px 0 8px">${t('rq_recent_h')}</div><div style="overflow-x:auto;max-height:300px;overflow-y:auto"><table><thead><tr><th>${t('dlog_when')}</th><th>${t('th_client')}</th><th>${t('rq_th_req')}</th><th>${t('rq_th_outcome')}</th><th>${t('dlog_by')}</th></tr></thead><tbody>${done.map(row).join('')}</tbody></table></div>`:''}`;
+}
+async function decideReq(id,approve){
+  const r=(data.removalReqs||[]).find(x=>x.id===id); if(!r||!can('deleteClients'))return;
+  const c=clientById(r.client_id), k=r.keep_id?clientById(r.keep_id):null, dup=`#${r.client_code} ${c?c.name:r.client_name||''}`;
+  let note=null;
+  if(approve){
+    const msg=r.action==='merge'?t('dc_confirm_merge',{dup,keep:`#${r.keep_code} ${k?k.name:r.keep_name||''}`}):t('rq_confirm_delete',{c:dup,s:c?dcSummary(c):''});
+    if(!confirm(msg))return;
+  }else{note=prompt(t('rq_reject_prompt'),''); if(note===null)return;}
+  // stored files of a deleted client go too; on a merge only the duplicate's logo, when the kept client has its own
+  const del=approve&&r.action==='delete';
+  const letters=del?allEngs().filter(e=>e.client_id===r.client_id&&e.letter_file).map(e=>e.letter_file):[],
+        docs=del?(data.docs||[]).filter(d=>d.client_id===r.client_id).map(d=>d.file_path):[],
+        logo=approve&&c&&c.logo_file&&(del||(k&&k.logo_file&&k.logo_file!==c.logo_file))?c.logo_file:null;
+  const wasViewing=viewClientId===r.client_id;
+  const {error}=await sb.rpc('decide_client_removal',{req:id,approve,note});
+  if(error){alert(t('a_could_not_save')+error.message);await refresh();return}
+  try{if(letters.length)await sb.storage.from('engagement-letters').remove(letters);}catch(_){}
+  try{if(docs.length)await sb.storage.from('kyc-documents').remove(docs);}catch(_){}
+  try{if(logo)await sb.storage.from('client-logos').remove([logo]);}catch(_){}
+  if(approve&&wasViewing)closeClient();
+  await refresh();
+  if(approve&&wasViewing&&k)openClient(k.id);
+}
+async function withdrawReq(id){
+  if(!confirm(t('rq_confirm_withdraw')))return;
+  const {error}=await sb.rpc('cancel_client_removal',{req:id});
+  if(error)alert(t('a_could_not_save')+error.message);
+  await refresh();
+}
+function emailReq(id){const r=(data.removalReqs||[]).find(x=>x.id===id); if(r)emailApprovers(r);}
+// opens a ready-made email to the equity partners in the user's own mail program (nothing is sent automatically)
+async function emailApprovers(r){
+  const {data:em}=await sb.rpc('approver_emails');
+  const to=(em||[]).map(x=>typeof x==='string'?x:Object.values(x||{})[0]).filter(Boolean);
+  const cl=`#${r.client_code} ${r.client_name||''}`;
+  const body=t('rq_mail_body',{c:cl,what:reqWhat(r),reason:r.reason||'—',url:location.origin+location.pathname,me:(state.user&&state.user.email)||''});
+  const a=document.createElement('a');
+  a.href=`mailto:${to.join(',')}?subject=${encodeURIComponent(t('rq_mail_subj',{c:cl}))}&body=${encodeURIComponent(body)}`;
+  document.body.appendChild(a); a.click(); a.remove();
 }
 
 /* ---- client page ---- */
@@ -1770,6 +1927,7 @@ function renderClient(){
   $('clientView').innerHTML=`
    <button class="backbtn" onclick="closeClient()">${t('back')}</button>
    ${c.former?`<div class="panel" style="margin-bottom:12px;padding:10px 16px;border-inline-start:4px solid #b23b3b;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span><b>${t('former_banner')}</b>${c.former_at?` <span class="hint">${t('former_since',{d:fmtDate(String(c.former_at).slice(0,10))})}</span>`:''}</span>${can('editClients')?`<button onclick="setFormer('${c.id}',false)">${t('reactivate')}</button>`:''}</div>`:''}
+   ${reqClientBanner(c)}
    <div class="panel" style="margin-bottom:16px"><div style="padding:18px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
      <div style="display:flex;gap:14px;align-items:flex-start">${c.logo_file?`<img id="clientLogoImg" class="clogo" alt="${esc(c.name)}">`:''}<div><h2 style="margin:0;font-size:20px"><span class="code">#${c.client_code}</span> ${esc(c.name)}${groupOf(c)?`<span style="font-size:13px"> ${groupChip(groupOf(c))} <span class="hint">${esc(groupOf(c).name)}</span></span>`:''}</h2>
        <div class="sub2">${[c.industry,ctStr(c.client_types),c.legal_structure,contract,c.year_end_month?t('ye_short',{d:yeLabel(c.year_end_month)}):''].filter(Boolean).map(esc).join(' · ')}${firstAuditBadge(c)}</div>${distLine(c)}
@@ -1777,7 +1935,7 @@ function renderClient(){
        ${can('seeTiers')&&!c.former?`<div class="sub2" style="margin-top:4px">${t('th_tier')}: ${clientTierCell(c)} <span class="hint">${t('tier_basis',{y:tierYearLabel()})}</span></div>`:''}
        ${c.notes?`<div class="sub2" style="margin-top:6px">${esc(c.notes)}</div>`:''}
        ${c.logo_file?`<div class="sub2" style="margin-top:6px"><a href="#" onclick="downloadLogo('${c.id}');return false">${t('download_logo')}</a></div>`:''}</div></div>
-     <div style="display:flex;gap:8px;align-items:flex-start">${can('deleteClients')?`<button class="del" onclick="openDelClient('${c.id}')">${t('dc_btn')}</button>`:''}${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit_client')}</button>`:''}
+     <div style="display:flex;gap:8px;align-items:flex-start">${canRemove()?`<button class="del" onclick="openDelClient('${c.id}')">${t('dc_btn')}</button>`:''}${can('editClients')?`<button onclick="openClientModal('${c.id}')">${t('edit_client')}</button>`:''}
        <button class="primary" onclick="openEngModal('${c.id}',null)">${t('add_eng')}</button></div>
    </div></div>
    <div class="panel" style="margin-bottom:16px"><h3>${t('onboarding_title')}</h3><div style="padding:16px 20px">
@@ -1966,7 +2124,7 @@ function openClientModal(id){
   if(c&&c.logo_file){lcur.innerHTML=`<img id="cLogoPreview" class="clogo" alt="" style="width:48px;height:48px;vertical-align:middle"> ${esc(c.logo_file_name||'')} · <a href="#" style="color:#c0392b" onclick="removeLogo('${c.id}','${esc(c.logo_file)}');return false">${t('remove_file')}</a>`;fillLogo($('cLogoPreview'),c.logo_file);}
   else{lcur.textContent=t('no_logo');}
   updateFRA();
-  $('btnDelFromEdit').classList.toggle('hidden',!(id&&can('deleteClients')));
+  $('btnDelFromEdit').classList.toggle('hidden',!(id&&canRemove()));
   $('ovClient').classList.add('show');
 }
 async function saveClient(){
